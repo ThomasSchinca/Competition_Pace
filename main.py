@@ -27,6 +27,14 @@ scaler = MinMaxScaler(feature_range=(0,1))
 df_c = scaler.fit_transform(df_c)
 df_c=pd.DataFrame(df_c)
 
+
+bench1 = pd.read_csv('bench1.csv',index_col=0)
+bench1.columns = name_c
+bench1 = scaler.transform(bench1)
+bench2 = pd.read_csv('bench2.csv',index_col=0)
+bench2.columns = name_c
+bench2 = scaler.transform(bench2)
+
 df_sum = df_c.sum(axis=1)
 df_ar=df_sum
 for i in [1,2,3,12]:
