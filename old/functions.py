@@ -84,6 +84,7 @@ def get_dynamic_input_output(y: pd.Series,
     cl= m_dba.labels_
     cl=pd.Series(cl)
     cl=pd.get_dummies(cl)
+    cl=cl.astype(int)
         
     # Test data    
     ts_seq_2=[]
@@ -112,6 +113,7 @@ def get_dynamic_input_output(y: pd.Series,
     y_test = m_dba.predict(ts_seq_l)
     y_test=pd.Series(y_test)
     y_test=pd.get_dummies(y_test)
+    y_test=y_test.astype(int)
     
     # Make sure that length of dummy set is equal to n_clu
     # If not, add empty column 
@@ -308,6 +310,76 @@ def extract_b_clu(y: pd.Series,
     out= out.loc[:,out.apply(pd.Series.nunique)!=1]
     return(out)
 
+def extract_b_clu_h(y: pd.Series,
+                    h:2,
+                  test_clu: list,
+                  test_win: list,
+                  model=TimeSeriesKMeans(n_clusters=5, 
+                                         metric="dtw",
+                                         max_iter_barycenter=100,
+                                         verbose=0,
+                                         random_state=0),
+                  train_test_split: float=0.7,
+                  select: str='top',
+                  top: int=5,
+                  thres: float=0.15):
+    
+    """ """
+    
+    df_std=pd.DataFrame()
+    X=pd.DataFrame()
+    
+    # Training data
+    y_eff = y.iloc[:int(train_test_split*len(y))]
+    
+    # For varying cluster number
+    for n_clu in test_clu:
+        # For varyinf window length
+        for number_s in test_win:
+            # Update number of clusters in model
+            model.n_clusters=n_clu
+            
+            # Get clusters and time sequences
+            clus=get_dynamic_clusters(y_eff,
+                                      number_s=number_s,
+                                      n_clu=n_clu,
+                                      model=model)
+            # Get input
+            clu_input=get_dynamic_input_output(y,
+                                               n_clu=n_clu,
+                                               number_s=number_s,
+                                               model=model,
+                                               train_test_split=train_test_split,
+                                               output=False)
+                            # Last row of time series, without first observation
+            data=pd.concat([pd.Series(clus['sequences'][h:,-1]),
+                            # Last row of cluster assignments, with first observation
+                            pd.Series(clus['seqences_clusters'][:-h])],
+                            axis=1)
+            # Std of time series for each cluster
+            df_std=pd.concat([df_std,data.groupby(1).std()],
+                             axis=0)
+            # Get input, exlduing first column
+            X=pd.concat([X,
+                         pd.DataFrame(clu_input['input'][:,1:],
+                         index=range(number_s,len(y)))],
+                         axis=1)
+            
+    # Rename columns
+    X.columns=range(len(X.columns))
+    df_std.index=range(len(df_std))
+    
+    # Select top 5, with lowest std
+    if select=='top':
+        out = X.iloc[:,df_std.sort_values(0).index[:top]]
+    # Select if std below threshold
+    elif select=='threshold':
+        out = X.iloc[:,df_std[df_std[0]<thres].index]
+    out=out.fillna(0)    
+    out= out.loc[:,out.apply(pd.Series.nunique)!=1]
+    return(out)
+
+
 # =============================================================================
 # ARIMA
 # =============================================================================
@@ -329,6 +401,7 @@ def DARIMA(y,
     cl= km_dba.labels_
     cl=pd.Series(cl)
     cl=pd.get_dummies(cl)
+    cl=cl.astype(int)
     if X==None:
         model_f = auto_arima(y_eff,np.array(cl))
     else:    
@@ -397,6 +470,7 @@ def Compare_pred(y,X=None,number_s=5,n_clu=5,plot_res=False,train_test_split=0.7
     cl= km_dba.labels_
     cl=pd.Series(cl)
     cl=pd.get_dummies(cl)
+    cl=cl.astype(int)
     while len(cl.columns)<n_clu:
         cl[len(cl.columns)]=[0]*len(cl)
     ts_seq=[]
@@ -410,6 +484,7 @@ def Compare_pred(y,X=None,number_s=5,n_clu=5,plot_res=False,train_test_split=0.7
     y_test = km_dba.predict(ts_seq_l)
     y_test=pd.Series(y_test)
     y_test=pd.get_dummies(y_test)
+    y_test=y_test.astype(int)
     while len(y_test.columns)<n_clu:
         y_test[len(y_test.columns)]=[0]*len(y_test)    
     

@@ -3,7 +3,7 @@
 """
 Created on Sun Feb 19 12:37:18 2023
 
-@author: hannahfrank
+@author: thoma
 """
 
 import pandas as pd
@@ -22,13 +22,38 @@ seed(1)
 tf.random.set_seed(1)
 
 # =============================================================================
+# Model creation (for memory purpose)
+# =============================================================================
+
+def model_fit(model,x_train, y_train, callbacks ,epochs=5000, batch_size=16, verbose=0, shuffle=True):
+    model.fit(x_train, y_train,callbacks=callbacks, epochs=epochs, batch_size=16, verbose=0, shuffle=True)
+    return model 
+
+def train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r):
+    model = keras.Sequential()
+    if n_layer == 1:
+        model.add(LSTM(nb_hidden, activation=acti, input_shape=(x_train.shape[1], x_train.shape[2])))
+        model.add(Dropout(drop))
+    if n_layer == 2:
+        model.add(LSTM(nb_hidden, activation=acti, return_sequences=True, input_shape=(x_train.shape[1], x_train.shape[2])))
+        model.add(Dropout(drop))
+        model.add(LSTM(nb_hidden, activation=acti))
+        model.add(Dropout(drop))
+    model.add(Dense(1))
+    model.compile(loss='mse', optimizer=Adam(learning_rate=l_r))
+    n_epochs = 5000
+    es = EarlyStopping(monitor='loss', mode='min', verbose=0, patience=50)
+    model = model_fit(model,x_train, y_train,callbacks=[es], epochs=n_epochs, batch_size=16, verbose=0, shuffle=True)
+    return model
+
+
+# =============================================================================
 # General model application
 # =============================================================================
 
 
 def nn_model_pred(y,X=None,mod='lstm',ar=1,n_clu=5,number_s=5,train_test_split=0.7,opti_grid=None,metric='mse',plot=False,compare=False):
     seed(1)
-    tf.random.set_seed(1)
     tf.random.set_seed(0)
     in_out=get_dynamic_input_output(y,ar,n_clu,number_s)
     if X is not None:
@@ -52,21 +77,8 @@ def nn_model_pred(y,X=None,mod='lstm',ar=1,n_clu=5,number_s=5,train_test_split=0
                             nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                             if nb_hidden<32:
                                 nb_hidden=32
-                            model = keras.Sequential()
-                            if n_layer==1:
-                                model.add(LSTM(nb_hidden,activation=acti,input_shape=(x_train.shape[1],x_train.shape[2])))
-                                model.add(Dropout(drop))
-                            if n_layer==2:
-                                model.add(LSTM(nb_hidden,activation=acti,return_sequences=True,input_shape=(x_train.shape[1],x_train.shape[2])))
-                                model.add(Dropout(drop))
-                                model.add(LSTM(nb_hidden,activation=acti))
-                                model.add(Dropout(drop))
-                            model.add(Dense(1))
-                            model.compile(loss='mse',optimizer= Adam(learning_rate=l_r))
-                            n_epochs=5000
-                            es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                            model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                            pred = model.predict(x_test,verbose=0)
+                            trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                            pred = trained_model.predict(x_test, verbose=0)
                             if metric=='mse':
                                 eva=mean_squared_error(y_test, pred)
                                 if eva < min_eva :
@@ -79,21 +91,18 @@ def nn_model_pred(y,X=None,mod='lstm',ar=1,n_clu=5,number_s=5,train_test_split=0
                 plt.show()                        
                                     
         else:
-            model = keras.Sequential()
             nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
             if nb_hidden<32:
                 nb_hidden=32
-            model.add(LSTM(nb_hidden,activation='relu',input_shape=(x_train.shape[1],x_train.shape[2])))
-            model.add(Dropout(0.1))
-            model.add(Dense(1))
-            model.compile(loss='mse',optimizer= Adam(learning_rate=0.001))
-            n_epochs=5000
-            es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-            model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-            m_pred = model.predict(x_test,verbose=0)
+            n_layer = 1  
+            acti = 'relu'  
+            drop = 0.2  
+            l_r = 0.001    
+            trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+            m_pred = trained_model.predict(x_test, verbose=0) 
             if plot==True:
                 plt.plot(y_test[:100],label='Observed values')
-                plt.plot(pred[:100],label='Predicted values')
+                plt.plot(m_pred[:100],label='Predicted values')
                 plt.legend()
                 plt.show()
             eva=mean_squared_error(y_test, m_pred)   
@@ -113,21 +122,8 @@ def nn_model_pred(y,X=None,mod='lstm',ar=1,n_clu=5,number_s=5,train_test_split=0
                                 nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                                 if nb_hidden<32:
                                     nb_hidden=32
-                                model = keras.Sequential()
-                                if n_layer==1:
-                                    model.add(LSTM(nb_hidden,activation=acti,input_shape=(x_train.shape[1],x_train.shape[2])))
-                                    model.add(Dropout(drop))
-                                if n_layer==2:
-                                    model.add(LSTM(nb_hidden,activation=acti,return_sequences=True,input_shape=(x_train.shape[1],x_train.shape[2])))
-                                    model.add(Dropout(drop))
-                                    model.add(LSTM(nb_hidden,activation=acti))
-                                    model.add(Dropout(drop))
-                                model.add(Dense(1))
-                                model.compile(loss='mse',optimizer= Adam(learning_rate=l_r))
-                                n_epochs=5000
-                                es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                                model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                                pred_ar = model.predict(x_test,verbose=0)
+                                trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                                pred_ar = trained_model.predict(x_test, verbose=0) 
                                 if metric=='mse':
                                     eva_ar=mean_squared_error(y_test, pred_ar)
                                     if eva_ar < min_eva_ar :
@@ -135,18 +131,15 @@ def nn_model_pred(y,X=None,mod='lstm',ar=1,n_clu=5,number_s=5,train_test_split=0
                                         min_eva_ar = eva_ar                     
                                        
             else:
-                model = keras.Sequential()
                 nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                 if nb_hidden<32:
                     nb_hidden=32
-                model.add(LSTM(nb_hidden,activation='relu',input_shape=(x_train.shape[1],x_train.shape[2])))
-                model.add(Dropout(0.1))
-                model.add(Dense(1))
-                model.compile(loss='mse',optimizer= Adam(learning_rate=0.001))
-                n_epochs=5000
-                es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                m_pred_ar = model.predict(x_test,verbose=0)
+                n_layer = 1  
+                acti = 'relu'  
+                drop = 0.2  
+                l_r = 0.001    
+                trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                m_pred_ar = trained_model.predict(x_test, verbose=0) 
                 eva_ar=mean_squared_error(y_test, m_pred_ar)   
             out={metric:[eva,eva_ar],'Prediction':[m_pred,m_pred_ar],'Observed value':y_test}
         else:
@@ -176,22 +169,8 @@ def Compare_nn_exo(y,X,X1,ar=1,n_clu=1,number_s=5,plot_res=False,train_test_spli
                         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                         if nb_hidden<32:
                             nb_hidden=32
-                        model = keras.Sequential()
-                        if n_layer==1:
-                            model.add(LSTM(nb_hidden,activation=acti,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                        if n_layer==2:
-                            model.add(LSTM(nb_hidden,activation=acti,return_sequences=True,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                            model.add(LSTM(nb_hidden,activation=acti))
-                            model.add(Dropout(drop))
-                        model.add(Dense(1))
-                        model.compile(loss='mse',optimizer= Adam(learning_rate=l_r))
-                        n_epochs=5000
-                        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                        pred = model.predict(x_test,verbose=0)
-
+                        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                        pred = trained_model.predict(x_test, verbose=0)
                         eva=mean_squared_error(y_test, pred)
                         if eva < min_eva :
                             m_pred = pred
@@ -203,18 +182,15 @@ def Compare_nn_exo(y,X,X1,ar=1,n_clu=1,number_s=5,plot_res=False,train_test_spli
                 plt.show()                        
     
     else:
-        model = keras.Sequential()
         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
         if nb_hidden<32:
             nb_hidden=32
-        model.add(LSTM(nb_hidden,activation='relu',input_shape=(x_train.shape[1],x_train.shape[2])))
-        model.add(Dropout(0.1))
-        model.add(Dense(1))
-        model.compile(loss='mse',optimizer= Adam(learning_rate=0.001))
-        n_epochs=5000
-        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-        m_pred = model.predict(x_test,verbose=0)
+        n_layer = 1  
+        acti = 'relu'  
+        drop = 0.2  
+        l_r = 0.001    
+        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+        m_pred = trained_model.predict(x_test, verbose=0) 
         eva=mean_squared_error(y_test, m_pred)   
    
     min_eva_ar=np.inf
@@ -233,38 +209,22 @@ def Compare_nn_exo(y,X,X1,ar=1,n_clu=1,number_s=5,plot_res=False,train_test_spli
                         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                         if nb_hidden<32:
                             nb_hidden=32
-                        model = keras.Sequential()
-                        if n_layer==1:
-                            model.add(LSTM(nb_hidden,activation=acti,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                        if n_layer==2:
-                            model.add(LSTM(nb_hidden,activation=acti,return_sequences=True,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                            model.add(LSTM(nb_hidden,activation=acti))
-                            model.add(Dropout(drop))
-                        model.add(Dense(1))
-                        model.compile(loss='mse',optimizer= Adam(learning_rate=l_r))
-                        n_epochs=5000
-                        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                        pred_ar = model.predict(x_test,verbose=0)
+                        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                        pred_ar = trained_model.predict(x_test, verbose=0)
                         eva_ar=mean_squared_error(y_test, pred_ar)
                         if eva_ar < min_eva_ar :
                             m_pred_ar = pred_ar
                             min_eva_ar = eva_ar                     
     else:
-        model = keras.Sequential()
         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
         if nb_hidden<32:
             nb_hidden=32
-        model.add(LSTM(nb_hidden,activation='relu',input_shape=(x_train.shape[1],x_train.shape[2])))
-        model.add(Dropout(0.1))
-        model.add(Dense(1))
-        model.compile(loss='mse',optimizer= Adam(learning_rate=0.001))
-        n_epochs=5000
-        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-        m_pred_ar = model.predict(x_test,verbose=0)
+        n_layer = 1  
+        acti = 'relu'  
+        drop = 0.2  
+        l_r = 0.001    
+        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+        m_pred_ar = trained_model.predict(x_test, verbose=0) 
         eva_ar=mean_squared_error(y_test, m_pred_ar)   
     if plot_res==True:
         plt.figure(figsize=(20,5))
@@ -296,26 +256,13 @@ def Compare_nn_exo_h(y,X,X1,h,ar=1,n_clu=1,number_s=5,plot_res=False,train_test_
                         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                         if nb_hidden<32:
                             nb_hidden=32
-                        model = keras.Sequential()
-                        if n_layer==1:
-                            model.add(LSTM(nb_hidden,activation=acti,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                        if n_layer==2:
-                            model.add(LSTM(nb_hidden,activation=acti,return_sequences=True,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                            model.add(LSTM(nb_hidden,activation=acti))
-                            model.add(Dropout(drop))
-                        model.add(Dense(1))
-                        model.compile(loss='mse',optimizer= Adam(learning_rate=l_r))
-                        n_epochs=5000
-                        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                        pred = model.predict(x_test,verbose=0)
-
+                        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                        pred = trained_model.predict(x_test, verbose=0)
                         eva=mean_squared_error(y_test, pred)
                         if eva < min_eva :
                             m_pred = pred
                             min_eva = eva
+                        tf.keras.backend.clear_session()
             if plot_res==True:
                 plt.plot(y_test,label='Observed values')
                 plt.plot(m_pred,label='Predicted values')
@@ -323,20 +270,17 @@ def Compare_nn_exo_h(y,X,X1,h,ar=1,n_clu=1,number_s=5,plot_res=False,train_test_
                 plt.show()                        
     
     else:
-        model = keras.Sequential()
         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
         if nb_hidden<32:
             nb_hidden=32
-        model.add(LSTM(nb_hidden,activation='relu',input_shape=(x_train.shape[1],x_train.shape[2])))
-        model.add(Dropout(0.1))
-        model.add(Dense(1))
-        model.compile(loss='mse',optimizer= Adam(learning_rate=0.001))
-        n_epochs=5000
-        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-        m_pred = model.predict(x_test,verbose=0)
+        n_layer = 1  
+        acti = 'relu'  
+        drop = 0.2  
+        l_r = 0.001    
+        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+        m_pred = trained_model.predict(x_test, verbose=0) 
         eva=mean_squared_error(y_test, m_pred)   
-   
+    tf.keras.backend.clear_session()
     min_eva_ar=np.inf
     
     x = np.concatenate([in_out['input'][:,:ar],X],axis=1)
@@ -355,56 +299,33 @@ def Compare_nn_exo_h(y,X,X1,h,ar=1,n_clu=1,number_s=5,plot_res=False,train_test_
                         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
                         if nb_hidden<32:
                             nb_hidden=32
-                        model = keras.Sequential()
-                        if n_layer==1:
-                            model.add(LSTM(nb_hidden,activation=acti,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                        if n_layer==2:
-                            model.add(LSTM(nb_hidden,activation=acti,return_sequences=True,input_shape=(x_train.shape[1],x_train.shape[2])))
-                            model.add(Dropout(drop))
-                            model.add(LSTM(nb_hidden,activation=acti))
-                            model.add(Dropout(drop))
-                        model.add(Dense(1))
-                        model.compile(loss='mse',optimizer= Adam(learning_rate=l_r))
-                        n_epochs=5000
-                        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-                        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-                        pred_ar = model.predict(x_test,verbose=0)
+                        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+                        pred_ar = trained_model.predict(x_test, verbose=0)
                         eva_ar=mean_squared_error(y_test, pred_ar)
                         if eva_ar < min_eva_ar :
                             m_pred_ar = pred_ar
-                            min_eva_ar = eva_ar                     
+                            min_eva_ar = eva_ar  
+                        tf.keras.backend.clear_session()
     else:
-        model = keras.Sequential()
         nb_hidden = int(len(x[:,1])/(10*len(x[1,:])))
         if nb_hidden<32:
             nb_hidden=32
-        model.add(LSTM(nb_hidden,activation='relu',input_shape=(x_train.shape[1],x_train.shape[2])))
-        model.add(Dropout(0.1))
-        model.add(Dense(1))
-        model.compile(loss='mse',optimizer= Adam(learning_rate=0.001))
-        n_epochs=5000
-        es=EarlyStopping(monitor='loss', mode ='min',verbose=0,patience=50)
-        model.fit(x_train,y_train,epochs=n_epochs,batch_size=16,verbose=0,shuffle=True,callbacks=[es])
-        m_pred_ar = model.predict(x_test,verbose=0)
-        eva_ar=mean_squared_error(y_test, m_pred_ar)   
+        n_layer = 1  
+        acti = 'relu'  
+        drop = 0.2  
+        l_r = 0.001    
+        trained_model = train_model(x_train, y_train, n_layer, nb_hidden, acti, drop, l_r)
+        m_pred_ar = trained_model.predict(x_test, verbose=0) 
+        eva_ar=mean_squared_error(y_test, m_pred_ar)     
     if plot_res==True:
         plt.figure(figsize=(20,5))
         plt.plot(y_test,label='Observed')
         plt.plot(m_pred_ar,label='RF prediction')
         plt.plot(m_pred,label='RFX prediction')
         plt.legend()
-        plt.show()            
+        plt.show()          
+    tf.keras.backend.clear_session()
     return({'results_table':pd.DataFrame([eva_ar,eva,((eva_ar-eva)/eva_ar)*100],index=['LSTM_MSE','LSTMX_MSE','%_Improv']),'rf_pred':m_pred_ar,'rfx_pred':m_pred})
           
-
-def reset_tf_memory():
-    """
-    Resets the memory of TensorFlow.
-    """
-    tf.keras.backend.clear_session()
-    physical_devices = tf.config.list_physical_devices('GPU')
-    if len(physical_devices) > 0:
-        tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
         

@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tslearn.clustering import TimeSeriesKMeans
 import numpy as np
 from sklearn.metrics import mean_squared_error
-from functions import extract_b_clu,Compare_RF_exo_h,Compare_pred_exo_h,Compare_RF_exo_only_h,Compare_pred_exo_only_h
+from functions import extract_b_clu,extract_b_clu_h,Compare_RF_exo_h,Compare_pred_exo_h,Compare_RF_exo_only_h,Compare_pred_exo_only_h
 from functions_deep_learning import Compare_nn_exo_h
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -27,13 +27,14 @@ scaler = MinMaxScaler(feature_range=(0,1))
 df_c = scaler.fit_transform(df_c)
 df_c=pd.DataFrame(df_c)
 
-
 bench1 = pd.read_csv('bench1.csv',index_col=0)
 bench1.columns = name_c
 bench1 = scaler.transform(bench1)
+bench1=pd.DataFrame(bench1)
 bench2 = pd.read_csv('bench2.csv',index_col=0)
 bench2.columns = name_c
 bench2 = scaler.transform(bench2)
+bench2=pd.DataFrame(bench2)
 
 df_sum = df_c.sum(axis=1)
 df_ar=df_sum
@@ -62,7 +63,7 @@ val_len=-16
 
 for row in [*range(len(df_c.columns))]:
     ts = df_c.iloc[:,row]
-    if (ts.iloc[-31:-16]==0).all()==False:
+    if (ts.iloc[-40:-16]==0).all()==False:
         ts_resu_ar=[]
         ts_resu_arx=[]
         ts_resu_obs_ar=[]
@@ -73,12 +74,12 @@ for row in [*range(len(df_c.columns))]:
         ts_resu_obs_nn=[]
         ts_resu_tot=[]
         t_spt=0.85
-        # Extract patterns from the time series 
-        X1 = extract_b_clu(ts,[3,5,7],[3,5,7,9],train_test_split=t_spt,top=10)
-        X1=X1.iloc[:-1,:]
-        X = df_ar.iloc[-len(X1):,:].reset_index(drop=True)
-        X.index = X.index
         for h in range(3,15):
+            # Extract patterns from the time series 
+            X1 = extract_b_clu_h(ts,h,[3,5,7],[3,5,7,9],train_test_split=t_spt,top=10)
+            X1=X1.iloc[:-1,:]
+            X = df_ar.iloc[-len(X1):,:].reset_index(drop=True)
+            X.index = X.index
             # Initialize minimum error for ARIMA model
             min_ar_m=np.inf
             inclu =1
@@ -129,7 +130,7 @@ for row in [*range(len(df_c.columns))]:
                 if mean_squared_error(res_nn_t['rfx_pred'][:val_len],obs_val)<min_nn_m:
                     res_nn=res_nn_t
                     min_nn_m = mean_squared_error(res_nn_t['rfx_pred'][:val_len],obs_val)
-            
+            tf.keras.backend.clear_session()
             tot_val = pd.Series([mean_squared_error(res_ar['arima_pred'][:val_len],res_ar['Obs'][:val_len]),mean_squared_error(res['Darima_pred'][:val_len],res_ar['Obs'][:val_len]),mean_squared_error(res_rf['rf_pred'][:val_len],obs_val),mean_squared_error(res_rfx['rfx_pred'][:val_len],obs_val),mean_squared_error(res_nn['rf_pred'][:val_len],obs_val),mean_squared_error(res_nn['rfx_pred'][:val_len],obs_val)])
             
             ts_resu_ar.append(res_ar['arima_pred'][-16+h])
@@ -187,9 +188,25 @@ for row in [*range(len(df_c.columns))]:
         df_resu_obs.to_csv('Results/resu_obs.csv')
         df_resu_tot.to_csv('Results/resu_tot.csv')
         
-    plt.figure(figsize=(15,8))
-    plt.plot(ts_resu_tot,label = 'Pred - TOT',marker='o')   
-    plt.plot(ts_resu_obs_nn,label = 'Obs',marker='o')  
-    plt.legend()
-    plt.title(str(df_c.columns[row]))
-    plt.show()
+    if (ts.iloc[-13:-1]==0).all()==False:    
+        
+        mse1 = mean_squared_error(ts_resu_obs_nn,bench1.iloc[:12,row])
+        mse2 = mean_squared_error(ts_resu_obs_nn,bench2.iloc[:12,row])
+        mse3 = mean_squared_error(ts_resu_obs_nn,ts_resu_tot)
+        
+        plt.figure(figsize=(15,8))
+        plt.plot(ts_resu_tot,label = 'Pred - TOT',marker='o')   
+        plt.plot(ts_resu_obs_nn,label = 'Obs',marker='o')  
+        plt.plot(bench1.iloc[:12,row].tolist(),label='Bench1',marker='o')
+        plt.plot(bench2.iloc[:12,row].tolist(),label='Bench2',marker='o')
+        if (mse2-mse3)>0:
+            plt.text(11,max(ts_resu_obs_nn)-max(ts_resu_obs_nn)*0.1,'MSE diff Bench 2 :%1.3f'%(mse2-mse3),color='g')
+        else:
+            plt.text(11,max(ts_resu_obs_nn)-max(ts_resu_obs_nn)*0.1,'MSE diff Bench 2 :%1.3f'%(mse2-mse3),color='r')    
+        if (mse1-mse3)>0:
+            plt.text(11,max(ts_resu_obs_nn)-max(ts_resu_obs_nn)*0.2,'MSE diff Bench 1 :%1.3f'%(mse1-mse3),color='g')
+        else:
+            plt.text(11,max(ts_resu_obs_nn)-max(ts_resu_obs_nn)*0.2,'MSE diff Bench 1 :%1.3f'%(mse1-mse3),color='r')    
+        plt.legend()
+        plt.title(df_c.columns[row])
+        plt.show()
