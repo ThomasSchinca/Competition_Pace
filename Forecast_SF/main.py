@@ -31,15 +31,16 @@ bench2_tot = pd.read_csv('bench2.csv',index_col=0)
 l_sf=[]
 l_b=[]
 l_b2=[]
-for h in [4,5,6,7,8]:
-    for min_d in [0.1,0.3,0.5]:
-        for min_d_e in [0.05,0.1,0.2]:
-
+for h in [5]:
+    for min_d in [0.1,0.5]:
+        for min_d_e in [0.1]:
+            
             tot_df_sf=pd.DataFrame()
             tot_df_ar=pd.DataFrame()
             tot_df_ar2=pd.DataFrame()
             tot_df_obs=pd.DataFrame()
             for num in range(4):
+                
                 if num == 0:
                     df_tot_m=df_tot_tot
                     bench1=bench1_tot
@@ -68,6 +69,7 @@ for h in [4,5,6,7,8]:
                     df_sf=pd.DataFrame()
                     seq=ts.iloc[:h]
                     for i in range(math.ceil(15/h)):
+                        min_d_2=min_d
                         if (seq==0).all()==False:
                             ### Shape 
                             sh = Shape()
@@ -78,10 +80,10 @@ for h in [4,5,6,7,8]:
                             df_scaler.columns = ['Prediction', 'CI lower', 'CI upper']
                             fitted_scaler = scaler.fit(df_scaler)
                             model = finder(train_df,Shape=sh)
-                            pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d,dtw_sel=dtw_sel,select=True)
+                            pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True)
                             while pred is None:
-                                min_d=min_d+min_d_e
-                                pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d,dtw_sel=dtw_sel,select=True)
+                                min_d_2=min_d_2+min_d_e
+                                pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True)
                             pred=fitted_scaler.inverse_transform(pred)
                             pred[pred<0]=0
                             pred=pd.DataFrame(pred)
@@ -156,7 +158,7 @@ for h in [4,5,6,7,8]:
             l_sf.append(err_sf)
             l_b.append(err_b)
             l_b2.append(err_b2)
-    
+     
 
 # =============================================================================
 # Forecast : LSTM vs Bencharks
