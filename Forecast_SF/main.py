@@ -35,7 +35,7 @@ l_b2=[]
 l_sf_d=[]
 l_b_d=[]
 l_b2_d=[]
-for h in [7,8]:
+for h in [8]:
     for min_d in [0.1,0.5]:
         for min_d_e in [0.1]:
             
@@ -72,6 +72,11 @@ for h in [7,8]:
                 df_ar=pd.DataFrame()
                 df_ar2=pd.DataFrame()
                 df_obs=pd.DataFrame()
+                df_sf_tot=pd.DataFrame()
+                df_ar_d=pd.DataFrame()
+                df_ar2_d=pd.DataFrame()
+                df_obs_d=pd.DataFrame()
+                df_sf_diff_tot=pd.DataFrame()
                 for row in range(len(test_df.columns)):
                     ts=test_df.iloc[:,row]
                     df_sf=pd.DataFrame()
@@ -135,14 +140,18 @@ for h in [7,8]:
                     df_sf_diff=df_sf_diff.reset_index(drop=True)
                     df_sf_diff=df_sf_diff.diff()
                     df_sf_diff=df_sf_diff.iloc[1:,:]
-                    df_sf_diff_tot = pd.concat([df_sf_tot,df_sf_diff.iloc[:,0]],axis=1)
+                    df_sf_diff_tot = pd.concat([df_sf_diff_tot,df_sf_diff.iloc[:,0]],axis=1)
+                    
                     ### Bench 
                     ben1_diff=bench1.iloc[-13:,row]
                     ben1_diff=ben1_diff.diff()
+                    ben1_diff=ben1_diff.iloc[1:]
                     ben2_diff=bench2.iloc[-13:,row]
                     ben2_diff=ben2_diff.diff()
+                    ben2_diff=ben2_diff.iloc[1:]
                     obs_diff = ts.iloc[-13:]
                     obs_diff=obs_diff.diff()
+                    obs_diff=obs_diff.iloc[1:]
                      
                     ben1_diff=ben1_diff.reset_index(drop=True) 
                     ben2_diff=ben2_diff.reset_index(drop=True) 
@@ -151,16 +160,20 @@ for h in [7,8]:
                     ben2=ben2.reset_index(drop=True) 
                     obs=obs.reset_index(drop=True) 
                     
+                    df_ar_d=pd.concat([df_ar_d,ben1_diff],axis=1)
+                    df_ar2_d=pd.concat([df_ar2_d,ben2_diff],axis=1)
+                    df_obs_d=pd.concat([df_obs_d,obs_diff],axis=1)
+                    
                     
                     
                 tot_df_sf=pd.concat([tot_df_sf,df_sf_tot],axis=0)
                 tot_df_ar=pd.concat([tot_df_ar,df_ar],axis=0)
                 tot_df_ar2=pd.concat([tot_df_ar2,df_ar2],axis=0)
                 tot_df_obs=pd.concat([tot_df_obs,df_obs],axis=0)
-                tot_df_sf_diff=pd.concat([tot_df_sf_diff,df_sf_diff],axis=0)
-                tot_df_ar_diff=pd.concat([tot_df_ar_diff,ben1_diff],axis=0)
-                tot_df_ar2_diff=pd.concat([tot_df_ar2_diff,ben2_diff],axis=0)
-                tot_df_obs_diff=pd.concat([tot_df_obs_diff,obs_diff],axis=0)
+                tot_df_sf_diff=pd.concat([tot_df_sf_diff,df_sf_diff_tot],axis=0)
+                tot_df_ar_diff=pd.concat([tot_df_ar_diff,df_ar_d],axis=0)
+                tot_df_ar2_diff=pd.concat([tot_df_ar2_diff,df_ar2_d],axis=0)
+                tot_df_obs_diff=pd.concat([tot_df_obs_diff,df_obs_d],axis=0)
             
             tot_df_sf.columns = tot_df_obs.columns
             tot_df_ar.columns = tot_df_obs.columns
@@ -197,14 +210,24 @@ for h in [7,8]:
             l_b.append(err_b)
             l_b2.append(err_b2)
             
+            tot_df_sf_diff.index = tot_df_sf.index
             err_sf_d=[]
             err_b_d=[]
             err_b2_d=[]
             for i in range(len(tot_df_sf_diff.columns)):
                 for y in range(4):
-                    err_sf_d.append(mean_squared_error(tot_df_obs_diff.iloc[y*12:(y+1)*12,i], tot_df_sf_diff.iloc[y*12:(y+1)*12,i]))
-                    err_b_d.append(mean_squared_error(tot_df_obs_diff.iloc[y*12:(y+1)*12,i], tot_df_ar_diff.iloc[y*12:(y+1)*12,i]))
-                    err_b2_d.append(mean_squared_error(tot_df_obs_diff.iloc[y*12:(y+1)*12,i], tot_df_ar2_diff.iloc[y*12:(y+1)*12,i]))
+                    if (tot_df_obs_diff.iloc[y*12:(y+1)*12,i]==0).all() and (tot_df_sf_diff.iloc[y*12:(y+1)*12,i]==0).all():
+                        err_sf_d.append(0.0)
+                    else :
+                        err_sf_d.append(dtw.distance(tot_df_obs_diff.iloc[y*12:(y+1)*12,i], tot_df_sf_diff.iloc[y*12:(y+1)*12,i]))
+                    if (tot_df_obs_diff.iloc[y*12:(y+1)*12,i]==0).all() and  (tot_df_ar_diff.iloc[y*12:(y+1)*12,i]==0).all():    
+                        err_b_d.append(0.0)
+                    else:
+                        err_b_d.append(dtw.distance(tot_df_obs_diff.iloc[y*12:(y+1)*12,i], tot_df_ar_diff.iloc[y*12:(y+1)*12,i]))
+                    if (tot_df_obs_diff.iloc[y*12:(y+1)*12,i]==0).all() and  (tot_df_ar2_diff.iloc[y*12:(y+1)*12,i]==0).all():    
+                        err_b2_d.append(0.0)
+                    else:
+                        err_b2_d.append(dtw.distance(tot_df_obs_diff.iloc[y*12:(y+1)*12,i], tot_df_ar2_diff.iloc[y*12:(y+1)*12,i]))
 
             err_sf_d = np.array(err_sf_d).reshape((4,191),order='F')
             err_b_d = np.array(err_b_d).reshape((4,191),order='F')
