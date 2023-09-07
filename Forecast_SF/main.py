@@ -23,7 +23,7 @@ from tensorflow.keras.layers import Dense,LSTM,Bidirectional,Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam
 from pmdarima.arima import auto_arima
-
+from scipy.stats import ttest_1samp
 
 df_tot_tot=pd.read_csv('data.csv',index_col=0)
 bench1_tot = pd.read_csv('bench1.csv',index_col=0)
@@ -1059,3 +1059,222 @@ for min_d in [0.1,0.3]:
         l_sf_d.append(err_sf_d)
         l_b_d.append(err_b_d)
         l_b2_d.append(err_b2_d)
+        
+        
+# =============================================================================
+# Normalized
+# =============================================================================
+
+scaler=MinMaxScaler((0,1))
+df = scaler.fit_transform(df_tot_tot) 
+df=pd.DataFrame(df)
+
+for k in range(len(df_fin)):
+    tot_df_nn=df_fin[k]
+    tot_df_nn=tot_df_nn.fillna(0)
+    tot_df_nn=scaler.transform(tot_df_nn)
+    tot_df_nn=pd.DataFrame(tot_df_nn)
+    tot_df_nn.index = df_fin[k].index
+    tot_df_ar=df_fin2[0]
+    tot_df_ar=scaler.transform(tot_df_ar)
+    tot_df_ar=pd.DataFrame(tot_df_ar)
+    tot_df_ar.index = df_fin[k].index
+    tot_df_ar2=df_fin3[0]
+    tot_df_ar2=scaler.transform(tot_df_ar2)
+    tot_df_ar2=pd.DataFrame(tot_df_ar2)
+    tot_df_obs=df_fin4[0]
+    tot_df_obs=scaler.transform(tot_df_obs)
+    tot_df_obs=pd.DataFrame(tot_df_obs)
+    tot_df_ar2.index = tot_df_nn.index
+    tot_df_obs.index = df_fin[k].index
+    err_nn=[]
+    err_b=[]
+    err_b2=[]
+    for i in range(12):
+        err_nn.append(mean_squared_error(tot_df_obs.loc[i].to_numpy().flatten(), tot_df_nn.loc[i].to_numpy().flatten()))
+        err_b.append(mean_squared_error(tot_df_obs.loc[i].to_numpy().flatten(), tot_df_ar.loc[i].to_numpy().flatten()))
+        err_b2.append(mean_squared_error(tot_df_obs.loc[i].to_numpy().flatten(), tot_df_ar2.loc[i].to_numpy().flatten()))
+    plt.plot(err_nn,label=k)
+#plt.plot(err_b,label='ar1')    
+plt.plot(err_b2,label='ar2')   
+plt.legend()
+plt.show()
+
+tot_df_nn=df_fin[1]
+tot_df_nn=tot_df_nn.fillna(0)
+tot_df_nn=scaler.transform(tot_df_nn)
+tot_df_nn=pd.DataFrame(tot_df_nn)
+
+# tot_df_nn2=df_fin[1]
+# tot_df_nn2=tot_df_nn.fillna(0)
+# tot_df_nn2=scaler.transform(tot_df_nn2)
+# tot_df_nn2=pd.DataFrame(tot_df_nn2)
+
+# tot_df_nn.loc[:6] = tot_df_nn2.loc[:6] 
+
+tot_df_ar=df_fin2[0]
+tot_df_ar=scaler.transform(tot_df_ar)
+tot_df_ar=pd.DataFrame(tot_df_ar)
+tot_df_ar2=df_fin3[0]
+tot_df_ar2=scaler.transform(tot_df_ar2)
+tot_df_ar2=pd.DataFrame(tot_df_ar2)
+tot_df_obs=df_fin4[0]
+tot_df_obs=scaler.transform(tot_df_obs)
+tot_df_obs=pd.DataFrame(tot_df_obs)
+err_nn=[]
+err_b=[]
+err_b2=[]
+for i in range(len(tot_df_nn.columns)):
+    for y in range(4):
+        err_nn.append(mean_squared_error(tot_df_obs.iloc[y*12:(y+1)*12,i], tot_df_nn.iloc[y*12:(y+1)*12,i]))
+        err_b.append(mean_squared_error(tot_df_obs.iloc[y*12:(y+1)*12,i], tot_df_ar.iloc[y*12:(y+1)*12,i]))
+        err_b2.append(mean_squared_error(tot_df_obs.iloc[y*12:(y+1)*12,i], tot_df_ar2.iloc[y*12:(y+1)*12,i]))
+    err_nn.append(mean_squared_error(tot_df_obs.iloc[:,i], tot_df_nn.iloc[:,i]))
+    err_b.append(mean_squared_error(tot_df_obs.iloc[:,i], tot_df_ar.iloc[:,i]))
+    err_b2.append(mean_squared_error(tot_df_obs.iloc[:,i], tot_df_ar2.iloc[:,i]))
+
+err_nn = np.array(err_nn).reshape((5,191),order='F')
+err_b = np.array(err_b).reshape((5,191),order='F')
+err_b2 = np.array(err_b2).reshape((5,191),order='F')
+
+x_labels = ['Bench2']
+mea_2=(err_b2[:4, :].flatten()-err_nn[:4, :].flatten())
+mea_1=(err_b[:4, :].flatten()-err_nn[:4, :].flatten())
+means = [mea_2.mean()]
+plt.bar(x_labels, means, capsize=5)
+plt.xlabel('Models')
+plt.ylabel('MSE')  # You might want to add a y-label too
+plt.title('Mean Squared Error Normalized Comparison')  # You can add a title if needed
+#plt.yscale('log')
+plt.show()
+
+
+d_nn=[]
+d_b=[]
+d_b2=[]
+win=2
+for i in range(len(tot_df_nn.columns)):
+    for y in range(4):
+        real = tot_df_obs.iloc[y*12:(y+1)*12,i]
+        sf=tot_df_nn.iloc[y*12:(y+1)*12,i]
+        b1=tot_df_ar.iloc[y*12:(y+1)*12,i]
+        b2=tot_df_ar2.iloc[y*12:(y+1)*12,i]
+        max_s=0
+        max_b1=0
+        max_b2=0
+        for wi in range(12-win):
+            real_win = real.iloc[wi:wi+win+1]
+            sf_win= sf.iloc[wi:wi+win+1]
+            b1_win=b1.iloc[wi:wi+win+1]
+            b2_win=b2.iloc[wi:wi+win+1]
+            t_v=[]
+            for value in real_win[1:].index:
+                if ((real_win[value]<1.05*real_win[value-1]) and (real_win[value]>0.95*real_win[value-1])) or (real_win[value-1]==0 and real_win[value]==0) :
+                    t_v.append(1)
+                elif (real_win[value]>1.05*real_win[value-1]):
+                    t_v.append(2)
+                elif (real_win[value]<0.95*real_win[value-1]):
+                    t_v.append(0)
+            if (pd.Series(t_v)==1).all()==False:
+                sf_v=[]
+                for value in sf_win[1:].index:
+                    if ((sf_win[value]<1.05*sf_win[value-1]) and (sf_win[value]>0.95*sf_win[value-1])) or (sf_win[value-1]==0 and sf_win[value]==0) :
+                        sf_v.append(1)
+                    elif (sf_win[value]>1.05*sf_win[value-1]):
+                        sf_v.append(2)
+                    elif (sf_win[value]<0.95*sf_win[value-1]):
+                        sf_v.append(0)
+                mat=0        
+                for index in range(len(sf_v)):
+                    if t_v[index] ==sf_v[index]:
+                        mat += 1  
+                max_s=max_s+mat/len(sf_v)
+                
+                b1_v=[]
+                for value in b1_win[1:].index:
+                    if ((b1_win[value]<1.05*b1_win[value-1]) and (b1_win[value]>0.95*b1_win[value-1])) or (b1_win[value-1]==0 and b1_win[value]==0) :
+                        b1_v.append(1)
+                    elif (b1_win[value]>1.05*b1_win[value-1]):
+                        b1_v.append(2)
+                    elif (b1_win[value]<0.95*b1_win[value-1]):
+                        b1_v.append(0)
+                mat=0        
+                for index in range(len(b1_v)):
+                    if t_v[index] ==b1_v[index]:
+                        mat += 1  
+                max_b1=max_b1+mat/len(b1_v)
+                
+                b2_v=[]
+                for value in b2_win[1:].index:
+                    if ((b2_win[value]<1.05*b2_win[value-1]) and (b2_win[value]>0.95*b2_win[value-1])) or (b2_win[value-1]==0 and b2_win[value]==0) :
+                        b2_v.append(1)
+                    elif (b2_win[value]>1.05*b2_win[value-1]):
+                        b2_v.append(2)
+                    elif (b2_win[value]<0.95*b2_win[value-1]):
+                        b2_v.append(0)
+                mat=0        
+                for index in range(len(b2_v)):
+                    if t_v[index] ==b2_v[index]:
+                        mat += 1  
+                max_b2=max_b2+mat/len(b2_v)
+        d_nn.append(max_s)
+        d_b.append(max_b1)
+        d_b2.append(max_b2)
+
+d_nn = np.array(d_nn).reshape((4,191),order='F')
+d_b = np.array(d_b).reshape((4,191),order='F')
+d_b2 = np.array(d_b2).reshape((4,191),order='F')
+
+d_comp = (d_nn - d_b2)
+d_comp = pd.DataFrame(d_comp)
+plt.plot(d_comp.mean())
+
+
+year=['2022','2021','2020','2019']
+for i in d_comp.mean().sort_values(ascending=False)[5:10].index:
+    for y in range(4):
+        real = tot_df_obs.iloc[y*12:(y+1)*12,i]
+        sf=tot_df_nn.iloc[y*12:(y+1)*12,i]
+        b1=tot_df_ar.iloc[y*12:(y+1)*12,i]
+        b2=tot_df_ar2.iloc[y*12:(y+1)*12,i]
+        plt.figure(figsize=(10, 6))
+        plt.plot(sf, label='ShapeFinder', marker='o',color='r')
+        #plt.plot(b1, label='Bench1', marker='o',color='g')
+        plt.plot(b2, label='Bench2', marker='o',color='b')
+        plt.plot(real,label='Obs',marker='o',linewidth=5)
+        plt.legend()
+        plt.grid(True)
+        plt.title(test_df.columns[i]+year[y])
+        plt.show()
+        
+        print(test_df.columns[i]+year[y])
+        print(mean_squared_error(real,sf))
+        print(mean_squared_error(real,b2))
+        print('      ')
+        
+        
+
+#         if (tot_df_obs.iloc[y*12:(y+1)*12,i].diff()[1:]==0).all() and (tot_df_nn.iloc[y*12:(y+1)*12,i].diff()[1:]==0).all():
+#             d_nn.append(0)
+#         else : 
+#             d_nn.append(dtw.distance(tot_df_obs.iloc[y*12:(y+1)*12,i].diff()[1:].tolist(), tot_df_nn.iloc[y*12:(y+1)*12,i].diff()[1:].tolist()))
+#         if (tot_df_obs.iloc[y*12:(y+1)*12,i].diff()[1:]==0).all() and (tot_df_ar.iloc[y*12:(y+1)*12,i].diff()[1:]==0).all():
+#             d_b.append(0)
+#         else : 
+#             d_b.append(dtw.distance(tot_df_obs.iloc[y*12:(y+1)*12,i].diff()[1:].tolist(), tot_df_ar.iloc[y*12:(y+1)*12,i].diff()[1:].tolist()))
+#         if (tot_df_obs.iloc[y*12:(y+1)*12,i].diff()[1:]==0).all() and (tot_df_ar2.iloc[y*12:(y+1)*12,i].diff()[1:]==0).all():
+#             d_b2.append(0)
+#         else : 
+#             d_b2.append(dtw.distance(tot_df_obs.iloc[y*12:(y+1)*12,i].diff()[1:].tolist(), tot_df_ar2.iloc[y*12:(y+1)*12,i].diff()[1:].tolist()))
+
+# d_nn = np.array(d_nn).reshape((4,191),order='F')
+# d_b = np.array(d_b).reshape((4,191),order='F')
+# d_b2 = np.array(d_b2).reshape((4,191),order='F')
+
+# d_comp = (d_b2 - d_nn)
+# d_comp = pd.DataFrame(d_comp)
+# d_comp.median().mean()
+# plt.plot(d_comp.median(axis=1).to_numpy().flatten())
+
+
+
