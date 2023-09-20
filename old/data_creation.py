@@ -6,12 +6,6 @@ Created on Mon Aug  7 17:19:30 2023
 """
 
 import pandas as pd
-from scipy.stats import pearsonr
-from sklearn.preprocessing import MinMaxScaler
-from tslearn.clustering import TimeSeriesKMeans
-import numpy as np
-from sklearn.metrics import mean_squared_error
-import matplotlib.pyplot as plt
 
 df = pd.read_parquet('cm_actuals_allyears.parquet')
 df=df.reset_index() 
@@ -40,7 +34,7 @@ for i in df_y.country_id.unique():
     df_sub = df_sub[~df_sub.index.duplicated(keep='first')]
     df_c = pd.concat([df_c,df_sub],axis=1)
 
-df_c.to_csv('data.csv')
+#df_c.to_csv('data.csv')
 
 tot_b=pd.DataFrame()
 tot_b_2 = pd.DataFrame()
@@ -59,5 +53,6 @@ for date in ['2018','2019','2020','2021']:
     bench_2 = pd.DataFrame(bench_2).pivot(columns='country_id',index='month_id', values='outcome')
     tot_b_2=pd.concat([tot_b_2,bench_2],axis=0)
     
-tot_b.to_csv('bench1.csv')
-tot_b_2.to_csv('bench2.csv')
+#tot_b.to_csv('bench1.csv')
+#tot_b_2.to_csv('bench2.csv')
+
