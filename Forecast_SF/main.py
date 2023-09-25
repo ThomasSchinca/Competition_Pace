@@ -14,6 +14,7 @@ from shapefinder import Shape,finder
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt 
 from sklearn.metrics import mean_squared_error
+import random 
 
 df_tot_tot=pd.read_csv('data.csv',index_col=0)
 bench1_tot = pd.read_csv('bench1.csv',index_col=0)
@@ -76,10 +77,11 @@ for min_d in [0.1]:
                     df_scaler.columns = ['Prediction', 'CI lower', 'CI upper']
                     fitted_scaler = scaler.fit(df_scaler)
                     model = finder(train_df,Shape=sh)
-                    pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True)
+                    pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True,return_seq=False)
                     while pred is None:
                         min_d_2=min_d_2+min_d_e
                         pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True)
+                    
                     pred=fitted_scaler.inverse_transform(pred)
                     pred[pred<0]=0
                     pred=pd.DataFrame(pred)
@@ -175,5 +177,96 @@ tot_df_ar2.to_csv('ar2.csv')
 tot_df_obs.to_csv('obs.csv')
 
 
+# =============================================================================
+# Bootstrap
+# =============================================================================
+tot=pd.DataFrame(columns= ['year','week','country','boot','value'])
+h=15
+h_train=10
+for min_d in [0.1]:
+    for min_d_e in [0.1]:
+        tot_df_sf=pd.DataFrame()
+        tot_df_ar=pd.DataFrame()
+        tot_df_ar2=pd.DataFrame()
+        tot_df_obs=pd.DataFrame()
+        tot_df_sf_diff=pd.DataFrame()
+        tot_df_ar_diff=pd.DataFrame()
+        tot_df_ar2_diff=pd.DataFrame()
+        tot_df_obs_diff=pd.DataFrame()
+        for num in range(4):
+            
+            if num == 0:
+                df_tot_m=df_tot_tot
+                bench1=bench1_tot
+                bench2=bench2_tot
+            else:
+                df_tot_m=df_tot_tot.iloc[:(-12*num),:]
+                bench1=bench1_tot.iloc[:(-12*num),:]
+                bench2=bench2_tot.iloc[:(-12*num),:]
+            
+        # =============================================================================
+        # Forecast : ShapeFinder vs Bencharks
+        # =============================================================================
+        
+        ############## Conflict
+            
+            train_df = df_tot_m.iloc[:-15-h_train,:]
+            test_df = df_tot_m.iloc[-15-h_train:,:]
+            
+            dtw_sel=2
+            df_sf_tot=pd.DataFrame()
+            df_ar=pd.DataFrame()
+            df_ar2=pd.DataFrame()
+            df_obs=pd.DataFrame()
+            df_sf_tot=pd.DataFrame()
+            df_ar_d=pd.DataFrame()
+            df_ar2_d=pd.DataFrame()
+            df_obs_d=pd.DataFrame()
+            df_sf_diff_tot=pd.DataFrame()
+            for row in range(len(test_df.columns)):
+                ts=test_df.iloc[:,row]
+                df_sf=pd.DataFrame()
+                seq=ts.iloc[:h_train]
+                min_d_2=min_d
+                if (seq==0).all()==False:
+                    ### Shape 
+                    sh = Shape()
+                    sh.set_shape(np.array(seq))
+                    scaler = MinMaxScaler((0,1))
+                    df_scaler=pd.concat([seq,seq,seq],axis=1)
+                    df_scaler.index=range(len(df_scaler))
+                    df_scaler.columns = ['Prediction', 'CI lower', 'CI upper']
+                    fitted_scaler = scaler.fit(df_scaler)
+                    model = finder(train_df,Shape=sh)
+                    pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True,return_seq=True)
+                    while pred is None:
+                        min_d_2=min_d_2+min_d_e
+                        pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=min_d_2,dtw_sel=dtw_sel,select=True,return_seq=True)
+                    for time in range(500):
+                        pred_b = pred.iloc[random.choices(range(len(pred)),k=len(pred)),:]
+                        pred_b = pd.concat([pred_b.mean(),pred_b.mean(),pred_b.mean()],axis=1)
+                        pred_b=fitted_scaler.inverse_transform(pred_b)
+                        pred_b[pred_b<0]=0
+                        pred_b=pd.DataFrame(pred_b)
+                        tot_b=pd.DataFrame([[num]*12,[*range(12)],[row]*12,[time]*12,pred_b.iloc[3:,0].tolist()]).T
+                        tot_b.columns=tot.columns
+                        tot=pd.concat([tot,tot_b])
+                else:
+                    pred=pd.concat([seq,seq,seq],axis=1)
+                    pred.columns=[0,1,2]
+                    pred=pred.iloc[3:,0].tolist()+[0]*5
+                    for time in range(500):
+                        tot_b=pd.DataFrame([[num]*12,[*range(12)],[row]*12,[time]*12,pred]).T
+                        tot_b.columns=tot.columns
+                        tot=pd.concat([tot,tot_b])
+                tot.to_csv('boot_100.csv')
 
 
+tot = pd.read_csv('boot.csv')
+tot_mean= tot.groupby(['year','week','country']).mean()
+tot_mean = tot_mean.reset_index()
+df_boot=pd.DataFrame()
+for i in range(191):
+    df_c = tot_mean[tot_mean.country==i]['value']
+    df_boot=pd.concat([df_boot,df_c.reset_index(drop=True)],axis=1)
+    

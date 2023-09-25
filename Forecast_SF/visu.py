@@ -57,8 +57,12 @@ err_b2 = np.array(err_b2).reshape((5,191),order='F')
 d_mse = err_nn/err_b2
 
 x_labels = ['Bench1','Bench2']
-mea_2=(err_b2[:4, :].flatten()-err_nn[:4, :].flatten())
-mea_1=(err_b[:4, :].flatten()-err_nn[:4, :].flatten())
+# mea_2=(err_b2[:4, :].flatten()-err_nn[:4, :].flatten())
+# mea_1=(err_b[:4, :].flatten()-err_nn[:4, :].flatten())
+
+mea_2=np.log(err_b2[:4, :].flatten()+2**(-16)/err_nn[:4, :].flatten())
+mea_1=np.log(err_b[:4, :].flatten()/err_nn[:4, :].flatten())
+
 means = [mea_1.mean(),mea_2.mean()]
 std = [2*mea_1.std()/np.sqrt(len(mea_1)),2*mea_2.std()/np.sqrt(len(mea_2))]
 mean2_data = pd.DataFrame({
@@ -78,14 +82,14 @@ marker_size = 150
 linewidth = 3
 fonts=25
 plt.rc('font', size=24)
-plt.ylabel('MSE difference',color=blue_color)
-plt.tick_params(axis='y', colors=blue_color)
 plt.scatter(mean2_data.index, mean2_data['mean'], color=blue_color, marker='o', s=marker_size)
 plt.errorbar(mean2_data.index, mean2_data['mean'], yerr=mean2_data['std'], fmt='none', color=blue_color, linewidth=linewidth)
 plt.grid(False)
 plt.hlines(0,-0.5,1.5,linestyles='--',color='r')
 plt.xticks([0,1],['Benchmark 1','Benchmark 2'])
-#plt.yscale('log')
+plt.yscale('log')
+plt.ylabel('MSE difference',color=blue_color)
+plt.tick_params(axis='y', colors=blue_color)
 plt.show()
 
 x_labels = ['Bench2']
@@ -629,7 +633,7 @@ for k in range(3):
     plt.plot(sf, label='ShapeFinder', marker='o',color='r')
     #plt.plot(b1, label='Bench1', marker='o',color='g')
     plt.plot(b2, label='Bench2', marker='o',color='b')
-    plt.plot(real,label='Obs',marker='o',linewidth=5)
+    plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
     #plt.legend()
     plt.grid(True)
     plt.title(df_tot_tot.columns[i]+year[y])
@@ -652,13 +656,11 @@ real=[0,1,0.5,0.8,0]
 b2=[0.45,0.45,0.45,0.45,0.45]
 plt.plot(sf, label='ShapeFinder', marker='o',color='r')
 plt.plot(b2, label='Bench2', marker='o',color='b')
-plt.plot(real,label='Obs',marker='o',linewidth=5)
+plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
 print(mean_squared_error(real,sf)/mean_squared_error(real,b2))
 plt.xticks([0,1,2,3,4],[1,2,3,4,5])
 plt.grid()
 plt.show()
-
-
 
 
 tot_df_nn=pd.read_csv('10_h15.csv',index_col=0)
@@ -688,3 +690,4 @@ df_2021 = new_df.iloc[2292*3:,:]
 # df_2019.to_parquet('pred_2019.parquet')
 # df_2020.to_parquet('pred_2020.parquet')
 # df_2021.to_parquet('pred_2021.parquet')
+
