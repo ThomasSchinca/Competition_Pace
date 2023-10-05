@@ -712,7 +712,7 @@ for k in range(4):
 year=['2021','2020','2019','2018']
 ind=[4]
 yea=[1]
-for k in range(4):
+for k in range(1):
     y=yea[k]
     i=pd.DataFrame(d_diff).mean().sort_values(ascending=False).index[ind[k]]
     real = tot_df_obs.iloc[y*12:(y+1)*12,i]
@@ -741,7 +741,7 @@ for k in range(4):
 year=['2021','2020','2019','2018']
 ind=[1]
 yea=[2]
-for k in range(4):
+for k in range(1):
     y=yea[k]
     i=pd.DataFrame(d_diff).mean().sort_values(ascending=False).index[ind[k]]
     real = tot_df_obs.iloc[y*12:(y+1)*12,i]
