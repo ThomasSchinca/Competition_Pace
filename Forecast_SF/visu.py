@@ -649,6 +649,124 @@ for k in range(3):
     print(d_nn[y,i]/d_b2[y,i])
     print('      ')    
     
+year=['2021','2020','2019','2018']
+ind=[4,1,9,11]
+yea=[1,2,3,1]
+for k in range(4):
+    y=yea[k]
+    i=pd.DataFrame(d_diff).mean().sort_values(ascending=False).index[ind[k]]
+    real = tot_df_obs.iloc[y*12:(y+1)*12,i]
+    sf=tot_df_nn.iloc[y*12:(y+1)*12,i]
+    b1=tot_df_ar.iloc[y*12:(y+1)*12,i]
+    b2=tot_df_ar2.iloc[y*12:(y+1)*12,i]
+    plt.figure(figsize=(15, 10))
+    plt.plot(sf, label='ShapeFinder', marker='o',color='r')
+    plt.plot(b1, label='Bench1', marker='o',color='g')
+    plt.plot(b2, label='Bench2', marker='o',color='b')
+    plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
+    #plt.legend()
+    plt.grid(True)
+    plt.title(df_tot_tot.columns[i]+year[y])
+    plt.xticks([])
+    plt.yticks([])
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['bottom'].set_visible(False)
+    plt.gca().spines['left'].set_visible(False)
+    plt.show()
+    
+    print(df_tot_tot.columns[i]+year[y])
+    print(d_nn[y,i]/d_b2[y,i])
+    print('      ')    
+        
+year=['2021','2020','2019','2018']
+ind=[4,1,9,11]
+yea=[1,2,3,1]
+for k in range(4):
+    y=yea[k]
+    i=pd.DataFrame(d_diff).mean().sort_values(ascending=False).index[ind[k]]
+    real = tot_df_obs.iloc[y*12:(y+1)*12,i]
+    sf=tot_df_nn.iloc[y*12:(y+1)*12,i]
+    b1=tot_df_ar.iloc[y*12:(y+1)*12,i]
+    b2=tot_df_ar2.iloc[y*12:(y+1)*12,i]
+    plt.figure(figsize=(15, 10))
+    plt.plot(sf, label='ShapeFinder', marker='o',color='r')
+    plt.plot(b1, label='Bench1', marker='o',color='g')
+    plt.plot(b2, label='Bench2', marker='o',color='b')
+    plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
+    #plt.legend()
+    plt.grid(True)
+    plt.title(df_tot_tot.columns[i]+year[y])
+    plt.xticks([])
+    plt.yticks([])
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['bottom'].set_visible(False)
+    plt.gca().spines['left'].set_visible(False)
+    plt.show()
+    
+    print(df_tot_tot.columns[i]+year[y])
+    print(d_nn[y,i]/d_b2[y,i])
+    print('      ')    
+
+year=['2021','2020','2019','2018']
+ind=[4]
+yea=[1]
+for k in range(4):
+    y=yea[k]
+    i=pd.DataFrame(d_diff).mean().sort_values(ascending=False).index[ind[k]]
+    real = tot_df_obs.iloc[y*12:(y+1)*12,i]
+    sf=tot_df_nn.iloc[y*12:(y+1)*12,i]
+    b1=tot_df_ar.iloc[y*12:(y+1)*12,i]
+    b2=tot_df_ar2.iloc[y*12:(y+1)*12,i]
+    plt.figure(figsize=(15, 10))
+    #plt.plot(sf, label='ShapeFinder', marker='o',color='r')
+    plt.plot(b1, label='Bench1', marker='o',color='g')
+    #plt.plot(b2, label='Bench2', marker='o',color='b')
+    plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
+    #plt.legend()
+    plt.grid(True)
+    plt.title(df_tot_tot.columns[i]+year[y])
+    plt.xticks([])
+    plt.yticks([])
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['bottom'].set_visible(False)
+    plt.gca().spines['left'].set_visible(False)
+    plt.show()
+    
+    print(df_tot_tot.columns[i]+year[y])
+    print(d_nn[y,i]/d_b2[y,i])
+    print('      ')  
+year=['2021','2020','2019','2018']
+ind=[1]
+yea=[2]
+for k in range(4):
+    y=yea[k]
+    i=pd.DataFrame(d_diff).mean().sort_values(ascending=False).index[ind[k]]
+    real = tot_df_obs.iloc[y*12:(y+1)*12,i]
+    sf=tot_df_nn.iloc[y*12:(y+1)*12,i]
+    b1=tot_df_ar.iloc[y*12:(y+1)*12,i]
+    b2=tot_df_ar2.iloc[y*12:(y+1)*12,i]
+    plt.figure(figsize=(15, 10))
+    #plt.plot(sf, label='ShapeFinder', marker='o',color='r')
+    #plt.plot(b1, label='Bench1', marker='o',color='g')
+    plt.plot(b2, label='Bench2', marker='o',color='b')
+    plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
+    #plt.legend()
+    plt.grid(True)
+    plt.title(df_tot_tot.columns[i]+year[y])
+    plt.xticks([])
+    plt.yticks([])
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['bottom'].set_visible(False)
+    plt.gca().spines['left'].set_visible(False)
+    plt.show()
+    
+    print(df_tot_tot.columns[i]+year[y])
+    print(d_nn[y,i]/d_b2[y,i])
+    print('      ')     
     
 plt.figure(figsize=(15, 10))
 sf=[0.6,0.8,0.05,0.4,0.3]
@@ -661,6 +779,23 @@ print(mean_squared_error(real,sf)/mean_squared_error(real,b2))
 plt.xticks([0,1,2,3,4],[1,2,3,4,5])
 plt.grid()
 plt.show()
+
+# plt.figure(figsize=(15, 10))
+# sf=[0,1,0,1,0]
+# sf=[0,1,0.5,0.8,0,0.2,0.5,0.8,0.9,1,0.2,0.4,0.6,0.2,0.1,0.1,0.1]
+# sf=[0.5,0.8,0.9,1,0.2,0.4,0.6,0.2]#,0.1,0.1,0.1]
+# plt.plot(sf, label='ShapeFinder', marker='o',color='black',linewidth=3)
+# #plt.plot(b2, label='Bench2', marker='o',color='b')
+# #plt.plot(real,label='Obs',marker='o',color='black',linewidth=5)
+# #print(mean_squared_error(real,sf)/mean_squared_error(real,b2))
+# plt.xticks([])
+# plt.yticks([])
+# plt.gca().spines['top'].set_visible(False)
+# plt.gca().spines['right'].set_visible(False)
+# plt.gca().spines['bottom'].set_visible(False)
+# plt.gca().spines['left'].set_visible(False)
+# plt.show()
+
 
 
 tot_df_nn=pd.read_csv('10_h15.csv',index_col=0)
