@@ -715,16 +715,21 @@ model = finder(train_df,Shape=sh)
 pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=0.4,dtw_sel=dtw_sel,select=True,return_seq=True)
 model.find_patterns(metric='dtw',min_d=0.4,dtw_sel=dtw_sel,select=False)
 
+
 for i in range(len(pred)):
     plt.plot(pred.iloc[i,:],color='r')
-    plt.title(i)
+    plt.title(i)  
     plt.show()
 
+pred.to_csv('pred_plot.csv')
+
+k=pd.DataFrame()
 for i in range(len(model.sequences)):
     plt.plot(model.sequences[i][0])
     plt.title(i)
     plt.show()
-
+    k=pd.concat([k,model.sequences[i][0].reset_index(drop=True)],axis=1)
+k.to_csv('model_plot.csv')
      
 year=['2021','2020','2019','2018']
 yea=2
@@ -811,5 +816,93 @@ tot_3.to_parquet('pred_2021_15bootstrap.parquet',index=False)
 # df_2020.to_parquet('pred_2020.parquet')
 # df_2021.to_parquet('pred_2021.parquet')
 
+df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged231-csv.zip",
+                 parse_dates=['date_start','date_end'],low_memory=False)
 
+df_tot = pd.DataFrame(columns=['Israel'],index=pd.date_range(df.date_start.min(),
+                                          df.date_end.max()))
+df_tot=df_tot.fillna(0)
+for i in ['Israel']:
+    df_sub=df[df.country==i]
+    for j in range(len(df_sub)):
+        if df_sub.date_start.iloc[j] == df_sub.date_end.iloc[j]:
+            df_tot.loc[df_sub.date_start.iloc[j],i]=df_tot.loc[df_sub.date_start.iloc[j],i]+df_sub.best.iloc[j]
+df_isr=df_tot.resample('M').sum()
+
+h=15
+h_train=10
+min_d=0.1
+min_d_e=0.1
+df_tot_m=df_tot_tot
+train_df = df_tot_m.iloc[:-h_train,:]
+dtw_sel=2
+row=-15
+seq=df_isr.iloc[-h_train:]
+min_d_2=min_d
+### Shape 
+sh = Shape()
+sh.set_shape(seq.iloc[:,0])
+scaler = MinMaxScaler((0,1))
+df_scaler=pd.concat([seq,seq,seq],axis=1)
+df_scaler.index=range(len(df_scaler))
+df_scaler.columns = ['Prediction', 'CI lower', 'CI upper']
+fitted_scaler = scaler.fit(df_scaler)
+model = finder(train_df,Shape=sh)
+pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=0.3,dtw_sel=dtw_sel,select=True)
+model.find_patterns(metric='dtw',min_d=0.3,dtw_sel=dtw_sel,select=False)
+pred=fitted_scaler.inverse_transform(pred)
+pred[pred<0]=0
+pred=pd.DataFrame(pred)
+pred.index = pd.date_range('01-01-2023','04-04-2024',freq='M')
+
+plt.figure(figsize=(20,6))
+plt.plot(seq,label='Real values')
+plt.plot(pred.iloc[:,0],label='Prediction',color='r')
+plt.legend()
+plt.title('Israel - Prediction')
+plt.show()
+
+
+
+df_tot = pd.DataFrame(columns=['Ukraine'],index=pd.date_range(df.date_start.min(),
+                                          df.date_end.max()))
+df_tot=df_tot.fillna(0)
+df_sub=df[df.country=='Ukraine']
+for j in range(len(df_sub)):
+    if df_sub.date_start.iloc[j] == df_sub.date_end.iloc[j]:
+        df_tot.loc[df_sub.date_start.iloc[j],'Ukraine']=df_tot.loc[df_sub.date_start.iloc[j],'Ukraine']+df_sub.best.iloc[j]
+df_isr=df_tot.resample('M').sum()
+
+h=15
+h_train=10
+min_d=0.1
+min_d_e=0.1
+df_tot_m=df_tot_tot
+train_df = df_tot_m.iloc[:-h_train,:]
+dtw_sel=2
+row=103
+seq=df_isr.iloc[-h_train-15:-15]
+min_d_2=min_d
+### Shape 
+sh = Shape()
+sh.set_shape(seq.iloc[:,0])
+scaler = MinMaxScaler((0,1))
+df_scaler=pd.concat([seq,seq,seq],axis=1)
+df_scaler.index=range(len(df_scaler))
+df_scaler.columns = ['Prediction', 'CI lower', 'CI upper']
+fitted_scaler = scaler.fit(df_scaler)
+model = finder(train_df,Shape=sh)
+pred = model.predict(horizon=h,plot=False,metric='dtw',min_d=0.3,dtw_sel=dtw_sel,select=True)
+model.find_patterns(metric='dtw',min_d=0.3,dtw_sel=dtw_sel,select=False)
+pred=fitted_scaler.inverse_transform(pred)
+pred[pred<0]=0
+pred=pd.DataFrame(pred)
+pred.index = pd.date_range('10-11-2021','12-31-2022',freq='M')
+
+plt.figure(figsize=(20,6))
+#plt.plot(df_isr.iloc[-15:],label='Real values')
+plt.plot(pred.iloc[:,0],label='Prediction',color='r')
+plt.legend()
+plt.title('Ukraine - Prediction')
+plt.show()
 

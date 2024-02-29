@@ -92,6 +92,7 @@ plt.ylabel('MSE difference',color=blue_color)
 plt.tick_params(axis='y', colors=blue_color)
 plt.show()
 
+
 x_labels = ['Bench2']
 mea_2=(err_b2[:4, :].flatten()-err_nn[:4, :].flatten())
 means = [mea_2.mean()]
@@ -825,4 +826,7 @@ df_2021 = new_df.iloc[2292*3:,:]
 # df_2019.to_parquet('pred_2019.parquet')
 # df_2020.to_parquet('pred_2020.parquet')
 # df_2021.to_parquet('pred_2021.parquet')
+
+
+
 
