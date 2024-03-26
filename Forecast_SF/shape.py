@@ -16,7 +16,10 @@ import numpy as np
 from dtaidistance import dtw,ed
 import bisect
 from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.stats import poisson, expon
+from scipy.optimize import minimize
 import math
+
 
 def int_exc(seq_n, win):
     """
@@ -646,10 +649,37 @@ class finder():
         
 
 
-
-
-
-
+    def predict_distrib(self,ma,mi,horizon=6,mode='poisson',quantile=[0.05,0.95]):
+        if len(self.sequences) < 3:
+            raise 'Please fit more than 3 sequences to fit a distribution.'
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max()] for series, weight in self.sequences]
+        pred_seq=[]
+        for col, last_date,mi,ma in tot_seq:
+            date=self.data.index.get_loc(last_date)
+            if date+horizon<len(self.data):
+                seq=self.data.iloc[date+1:date+1+horizon,self.data.columns.get_loc(col)].reset_index(drop=True)
+                seq = (seq - mi) / (ma - mi)
+                pred_seq.append(seq.tolist())
+        tot_seq=pd.DataFrame(pred_seq)
+        tot_seq = tot_seq*(ma-mi)+mi
+        
+        param=[]
+        if mode=='poisson': 
+            for row in range(len(tot_seq.columns)):
+                mu = np.mean(tot_seq.iloc[:,row])
+                sub=[]
+                for qu in quantile:
+                    sub.append(poisson.ppf(qu, mu))
+                param.append(sub)
+        elif mode=='expo':
+            for row in range(len(tot_seq.columns)):
+                scale_parameter = np.mean(tot_seq.iloc[:,row])
+                sub=[]
+                for qu in quantile:
+                    sub.append(expon.ppf(qu, scale=scale_parameter))
+                param.append(sub)
+        return pd.DataFrame(param,columns=quantile)
+        
 
 
 

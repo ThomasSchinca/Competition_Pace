@@ -87,11 +87,13 @@ df_input.index = pd.date_range('01/01/1989',periods=len(df_input),freq='M')
 df_input = df_input.iloc[:-1,:]
 df_input.columns = country_list['name']
 
+#df_input.to_csv('df_input.csv')
+
 df_tot_m = df_input.copy()
 df_tot_m.replace(0, np.nan, inplace=True)
 df_tot_m = df_tot_m.dropna(axis=1, how='all')
 df_tot_m = df_tot_m.fillna(0)
-
+#df_tot_m.to_csv('df_tot_m.csv')
 h_train=10
 h=12
 dict_m={i :[] for i in df_input.columns}
@@ -208,12 +210,12 @@ for coun in range(len(df_input_sub.columns)):
         tot_seq=pd.DataFrame(pred_seq)
         linkage_matrix = linkage(tot_seq, method='ward')
         clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
-        if len(pd.Series(clusters).value_counts())>7:
-            sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
-            tot_seq_c = tot_seq.copy()
-            tot_seq_c.loc[sub_norm,:] = 10
-            linkage_matrix = linkage(tot_seq_c, method='ward')
-            clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
+        # if len(pd.Series(clusters).value_counts())>7:
+        #     sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
+        #     tot_seq_c = tot_seq.copy()
+        #     tot_seq_c.loc[sub_norm,:] = 10
+        #     linkage_matrix = linkage(tot_seq_c, method='ward')
+        #     clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
         tot_seq['Cluster'] = clusters
         val_sce = tot_seq.groupby('Cluster').mean()
         pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
@@ -356,12 +358,12 @@ for coun in range(len(df_input_sub.columns)):
         tot_seq=pd.DataFrame(pred_seq)
         linkage_matrix = linkage(tot_seq, method='ward')
         clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
-        if len(pd.Series(clusters).value_counts())>7:
-            sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
-            tot_seq_c = tot_seq.copy()
-            tot_seq_c.loc[sub_norm,:] = 10
-            linkage_matrix = linkage(tot_seq_c, method='ward')
-            clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        # if len(pd.Series(clusters).value_counts())>7:
+        #     sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
+        #     tot_seq_c = tot_seq.copy()
+        #     tot_seq_c.loc[sub_norm,:] = 10
+        #     linkage_matrix = linkage(tot_seq_c, method='ward')
+        #     clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
         tot_seq['Cluster'] = clusters
         val_sce = tot_seq.groupby('Cluster').mean()
         pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
@@ -455,12 +457,12 @@ for coun in range(len(df_input_sub.columns)):
         tot_seq=pd.DataFrame(pred_seq)
         linkage_matrix = linkage(tot_seq, method='ward')
         clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
-        if len(pd.Series(clusters).value_counts())>7:
-            sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
-            tot_seq_c = tot_seq.copy()
-            tot_seq_c.loc[sub_norm,:] = 10
-            linkage_matrix = linkage(tot_seq_c, method='ward')
-            clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        # if len(pd.Series(clusters).value_counts())>7:
+        #     sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
+        #     tot_seq_c = tot_seq.copy()
+        #     tot_seq_c.loc[sub_norm,:] = 10
+        #     linkage_matrix = linkage(tot_seq_c, method='ward')
+        #     clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
         tot_seq['Cluster'] = clusters
         val_sce = tot_seq.groupby('Cluster').mean()
         pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
