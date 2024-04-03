@@ -32,7 +32,7 @@ for i in range(len(df_list_preds)):
     json_data = response.json()
     df=pd.DataFrame(json_data["data"])
     df=df[['country_id','month_id','month','sc_cm_sb_main']]
-    #df=df.loc[df["month"]==list(df_list_preds.values())[i]]
+    df['sc_cm_sb_main']=np.exp(df['sc_cm_sb_main'])-1
     df_all = pd.concat([df_all, df])
     df_all=df_all.reset_index(drop=True)
 cc_sort=df_all.country_id.unique()
@@ -48,7 +48,7 @@ for i in range(len(df_list_preds)):
     json_data = response.json()
     df=pd.DataFrame(json_data["data"])
     df=df[['country_id','month_id','month','sc_cm_sb_main']]
-    #df=df.loc[df["month"]==list(df_list_preds.values())[i]]
+    df['sc_cm_sb_main']=np.exp(df['sc_cm_sb_main'])-1
     df_all = pd.concat([df_all, df])
     df_all=df_all.reset_index(drop=True)
 cc_sort=df_all.country_id.unique()
@@ -538,60 +538,37 @@ df_sel = pd.concat([df_tot_res.iloc[:,0].reset_index(drop=True),pr_scale,pr_main
 df_sel = df_sel.dropna()
 df_sel.columns=['log MSE','Scale','Main_Pr','N_Matches']
 df_sel['Confidence']=df_sel.iloc[:,2]*np.log10(df_sel.iloc[:,3])
-n_df_sel= df_sel[df_sel['log MSE'] < 0]
-p_df_sel= df_sel[df_sel['log MSE'] > 0]
+n_df_sel= df_sel[df_sel['log MSE'] <= -0.2]
+p_df_sel= df_sel[df_sel['log MSE'] >= 0.2]
 
-plt.scatter(n_df_sel.iloc[:,1],n_df_sel.iloc[:,2],label='Neg')
-plt.scatter(p_df_sel.iloc[:,1],p_df_sel.iloc[:,2],label='Pos')
-plt.hlines(0.74, 0, 260, linestyles='--',color='green')
-plt.hlines(0.95, 0, 10000, linestyles='--',color='green')
-plt.vlines(260, 0, 0.74, linestyles='--',color='green')
-plt.vlines(10000, 0, 0.95, linestyles='--',color='green')
-plt.vlines(10000, 0.95, 1.1, linestyles='--',color='red')
-plt.fill_between([0, 280], [0, 0.74], color='red', alpha=0.2)
-plt.fill_between([10000, 1000000],0, 1.1 ,color='red', alpha=0.2)
-plt.fill_between([0, 10000],0.95, 1.1, color='red', alpha=0.2)
-plt.text(1,1.03,'Not enough matches',color='red')
-plt.text(20000,0.4,'Too risky',color='red')
-plt.text(1,0.2,'Views doing good',color='red',fontsize=20)
-plt.ylim(0,1.1)
-plt.xlim(0.5,1000000)
-plt.xscale('log')
-plt.legend()
-plt.xlabel('Scale')
-plt.ylabel('Highest scenario Pr')
-plt.show()
-
-
-df_keep_1=df_sel[(df_sel.iloc[:,1]<10000) & (0.74<df_sel.iloc[:,2])& (df_sel.iloc[:,2]<0.95)].index
-df_keep_2=df_sel[(df_sel.iloc[:,1]<10000) & (df_sel.iloc[:,1]>260) & (df_sel.iloc[:,2]<=0.74)].index
-df_try = pd.Series([0]*len(df_sel.iloc[:,0]))
-df_try[df_keep_2] = df_sel.loc[df_keep_2,'log MSE']
-df_try[df_keep_1] = df_sel.loc[df_keep_1,'log MSE']
-df_try=pd.concat([df_try,pd.Series([0]*271)])
-ttest_1samp(df_try,0)
 
 plt.figure(figsize=(10,8))
 plt.scatter(n_df_sel.iloc[:,1],n_df_sel.iloc[:,2]*np.log10(n_df_sel.iloc[:,3]),label='Neg',color='blue')
 plt.scatter(p_df_sel.iloc[:,1],p_df_sel.iloc[:,2]*np.log10(p_df_sel.iloc[:,3]),label='Pos',color='red')
 plt.xscale('log')
-plt.hlines(1.5, 0, 200, linestyles='--',color='red')
-plt.vlines(200, 0, 1.5, linestyles='--',color='red')
-plt.vlines(10000, 0, 2, linestyles='--',color='red')
+x_values = np.linspace(0, 100000, 1000)
+plt.plot(x_values, np.exp(5.2*np.log10(x_values) - 25) + 0.6, color='red',linestyle='--')
 plt.legend()
-plt.text(15000,0.4,'Too risky',color='red',fontsize=22)
-plt.text(1,0.1,'Views doing better',color='red',fontsize=22)
 plt.xlabel('Scale')
 plt.ylabel('Confidence = (Pr*log(N matches))')
+plt.ylim(0.2,1.7)
 plt.show()
 
-df_keep_1=df_sel[(df_sel.iloc[:,1]<10000) & (1.5<df_sel.iloc[:,4])].index
-df_keep_2=df_sel[(df_sel.iloc[:,1]<10000) & (df_sel.iloc[:,1]>200) & (df_sel.iloc[:,4]<=1.5)].index
-df_try = pd.Series([0]*len(df_sel.iloc[:,0]))
-df_try[df_keep_2] = df_sel.loc[df_keep_2,'log MSE']
-df_try[df_keep_1] = df_sel.loc[df_keep_1,'log MSE']
-df_try=pd.concat([df_try,pd.Series([0]*271)])
+df_sel_s = df_sel.sort_values(['Scale'])
+df_sel_s=df_sel_s[df_sel_s['Confidence']>0.6]
+df_sel_s=df_sel_s[df_sel_s['Scale']<25000]
+window_size = 3
+moving_avg = df_sel_s.iloc[:, 0].rolling(window=window_size).mean()
+# plt.scatter(df_sel_s.iloc[:,1],df_sel_s.iloc[:,0])
+# plt.plot(df_sel_s.iloc[:, 1], moving_avg, color='red', label=f'Moving Average (window={window_size})')
+# plt.hlines(0, 0, 25000, color='black')
+# plt.hlines(df_sel_s.iloc[:,0].mean(), 0, 25000, color='red',linestyles='--')
+# plt.xscale('log')
+# plt.show()
 
+df_keep_1 = df_sel_s.index
+ttest_1samp(df_sel_s.iloc[:,0],0)
+df_try=pd.concat([df_sel_s.iloc[:,0],pd.Series([0]*(111-len(df_sel_s)))])
 ttest_1samp(df_try,0)
 
 
@@ -682,13 +659,10 @@ err_t1 = pd.Series(err_t1)
 
 err_mix = err_views.copy()
 err_mix[ind_keep[df_keep_1]] = err_sf_pr.loc[ind_keep[df_keep_1]]
-err_mix[ind_keep[df_keep_2]] = err_sf_pr.loc[ind_keep[df_keep_2]]
 
 
 d_mix = d_b.copy()
 d_mix[ind_keep[df_keep_1]] = d_nn[ind_keep[df_keep_1]]
-d_mix[ind_keep[df_keep_2]] = d_nn[ind_keep[df_keep_2]]
-
 
 d_nn = d_nn[~np.isnan(d_nn)]
 d_b = d_b[~np.isnan(d_b)]
@@ -747,21 +721,21 @@ mean_mse = pd.DataFrame({
     'std': std_error
 })
 
-name=['SF/Views','Views','Null','t-1','SF']
-fig,ax = plt.subplots(figsize=(12,8))
-for i in range(5):
-    plt.scatter(mean_mse["mean"][i],mean_de["mean"][i],color="black",s=150)
-    plt.plot([mean_mse["mean"][i],mean_mse["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="black")
-    plt.plot([mean_mse["mean"][i]-mean_mse["std"][i],mean_mse["mean"][i]+mean_mse["std"][i]],[mean_de["mean"][i],mean_de["mean"][i]],linewidth=3,color="black")
-    plt.text(mean_mse["mean"][i], mean_de["mean"][i], name[i], size=20, color='black')
-plt.xlabel("Accuracy (log MSE)")
-plt.ylabel("Difference explained (Log DE)")
-plt.show()
+# name=['SF/Views','Views','Null','t-1','SF']
+# fig,ax = plt.subplots(figsize=(12,8))
+# for i in range(5):
+#     plt.scatter(mean_mse["mean"][i],mean_de["mean"][i],color="black",s=150)
+#     plt.plot([mean_mse["mean"][i],mean_mse["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="black")
+#     plt.plot([mean_mse["mean"][i]-mean_mse["std"][i],mean_mse["mean"][i]+mean_mse["std"][i]],[mean_de["mean"][i],mean_de["mean"][i]],linewidth=3,color="black")
+#     plt.text(mean_mse["mean"][i], mean_de["mean"][i], name[i], size=20, color='black')
+# plt.xlabel("Accuracy (log MSE)")
+# plt.ylabel("Difference explained (Log DE)")
+# plt.show()
 
 
 for i in range(len(df_input.columns)): 
     if (df_input.iloc[-24:-24+horizon,i]==0).all()==False:
-        if mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i])*3<mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i]):
+        if mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i])*2<mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i]):
             plt.plot(df_input.iloc[-24:-24+horizon,i].reset_index(drop=True),linewidth=2,color='black')
             plt.plot(df_sf_1.iloc[:,i].reset_index(drop=True),linewidth=5,color='purple')
             plt.plot(df_preds_test_1.iloc[:12,i].reset_index(drop=True),linewidth=2,color='grey')
@@ -771,7 +745,7 @@ for i in range(len(df_input.columns)):
             plt.title(f'{df_input.columns[i]} - 2021')
             plt.show()
     if (df_input.iloc[-12:,i]==0).all()==False:
-        if mean_squared_error(df_input.iloc[-12:,i], df_sf_2.iloc[:,i])*3<mean_squared_error(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i]):
+        if mean_squared_error(df_input.iloc[-12:,i], df_sf_2.iloc[:,i])*2<mean_squared_error(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i]):
             plt.plot(df_input.iloc[-12:,i].reset_index(drop=True),linewidth=2,color='black')
             plt.plot(df_sf_2.iloc[:,i].reset_index(drop=True),linewidth=5,color='purple')
             plt.plot( df_preds_test_2.iloc[:12,i].reset_index(drop=True),linewidth=2,color='grey')
