@@ -26,18 +26,18 @@ import seaborn as sns
 plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
 plt.rcParams.update(plot_params)
 
-### Define out paths ------
-home = '/Users/hannahfrank/'
-if not os.path.exists(os.path.join(home,'desktop/Views_competition_out')):
-    os.makedirs(os.path.join(home,'desktop/Views_competition_out'))
+# ### Define out paths ------
+# home = '/Users/hannahfrank/'
+# if not os.path.exists(os.path.join(home,'desktop/Views_competition_out')):
+#     os.makedirs(os.path.join(home,'desktop/Views_competition_out'))
 
-out_paths = {"plots": os.path.join(home,'desktop/Views_competition_out/plots'),
-    "data": os.path.join(home,'desktop/Views_competition_out/data'),
-    "analysis": os.path.join(home,'desktop/Views_competition_out/analysis'),}
+# out_paths = {"plots": os.path.join(home,'desktop/Views_competition_out/plots'),
+#     "data": os.path.join(home,'desktop/Views_competition_out/data'),
+#     "analysis": os.path.join(home,'desktop/Views_competition_out/analysis'),}
 
-for key, val in out_paths.items():
-    if not os.path.exists(val):
-        os.makedirs(val)
+# for key, val in out_paths.items():
+#     if not os.path.exists(val):
+#         os.makedirs(val)
         
         
 ### MSE example plot ###
@@ -53,7 +53,8 @@ plt.xticks([0,1,2,3,4],[1,2,3,4,5])
 plt.yticks([0,0.2,0.4,0.6,0.8,1],[0,0.2,0.4,0.6,0.8,1])
 plt.title('MSE Model I $>$ MSE Model II')
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fontsize=20,ncol=3)
-plt.savefig(os.path.join(out_paths["analysis"],"mse_example.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"mse_example.jpeg"),dpi=400,bbox_inches="tight")
+plt.show()
 
 ################
 ### Get Data ###
@@ -130,6 +131,9 @@ df_input.columns = country_list['name']
 # Save
 #df_input.to_csv('df_input.csv')
 
+# Load
+df_input=pd.read_csv('df_input.csv',index_col=0,parse_dates=True)
+
 # Fix missing values
 df_tot_m = df_input.copy()
 df_tot_m.replace(0, np.nan, inplace=True)
@@ -158,7 +162,7 @@ sns.kdeplot(df_input["Syria"],color="black", shade=True)
 sns.kdeplot(df_input["Afghanistan"],color="gray", shade=True)
 fig.legend(labels=['Syria','Afghanistan'],loc='upper center', bbox_to_anchor=(0.7, 0.88), fontsize=20,ncol=2)
 ax.set_xlabel("Number of fatalities per month")
-plt.savefig(os.path.join(out_paths["analysis"],"example_max.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"example_max.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 ### 90th percentile
@@ -167,7 +171,7 @@ sns.kdeplot(df_input["Philippines"],color="gray", shade=True)
 sns.kdeplot(df_input["Algeria"],color="black", shade=True)
 fig.legend(labels=['Philippines','Algeria'],loc='upper center', bbox_to_anchor=(0.7, 0.88), fontsize=20,ncol=2)
 ax.set_xlabel("Number of fatalities per month")
-plt.savefig(os.path.join(out_paths["analysis"],"example_90per.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"example_90per.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 ### 80th percentile
@@ -176,7 +180,7 @@ sns.kdeplot(df_input["Egypt"],color="gray", shade=True)
 sns.kdeplot(df_input["Peru"],color="black", shade=True)
 fig.legend(labels=['Egypt','Peru'],loc='upper center', bbox_to_anchor=(0.7, 0.88), fontsize=20,ncol=2)
 ax.set_xlabel("Number of fatalities per month")
-plt.savefig(os.path.join(out_paths["analysis"],"example_80per.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"example_80per.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 ### 70th percentile
@@ -185,7 +189,7 @@ sns.kdeplot(df_input["Bangladesh"],color="gray", shade=True)
 sns.kdeplot(df_input["Moldova"],color="black", shade=True)
 fig.legend(labels=['Bangladesh','Moldova'],loc='upper center', bbox_to_anchor=(0.7, 0.88), fontsize=20,ncol=2)
 ax.set_xlabel("Number of fatalities per month")
-plt.savefig(os.path.join(out_paths["analysis"],"example_70per.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"example_70per.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 ### 60th percentile
@@ -194,7 +198,7 @@ sns.kdeplot(df_input["China"],color="gray", shade=True)
 sns.kdeplot(df_input["Macedonia"],color="black", shade=True)
 fig.legend(labels=['China','Macedonia'],loc='upper center', bbox_to_anchor=(0.7, 0.88), fontsize=20,ncol=2)
 ax.set_xlabel("Number of fatalities per month")
-plt.savefig(os.path.join(out_paths["analysis"],"example_60per.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"example_60per.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 ### 50th percentile
@@ -203,7 +207,7 @@ sns.kdeplot(df_input["Kosovo"],color="gray", shade=True)
 sns.kdeplot(df_input["Belgium"],color="black", shade=True)
 fig.legend(labels=['Kosovo','Belgium'],loc='upper center', bbox_to_anchor=(0.7, 0.88), fontsize=20,ncol=2)
 ax.set_xlabel("Number of fatalities per month")
-plt.savefig(os.path.join(out_paths["analysis"],"example_50per.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"example_50per.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 
@@ -346,7 +350,7 @@ for coun in range(len(df_input_sub.columns)):
         plt.axhline(y=horizon/3, c='black', ls='--', lw=0.8)
         plt.xticks([])
         #plt.yticks([])
-        plt.savefig(os.path.join(out_paths["analysis"],f"dendogram_{coun}_2022.jpeg"),dpi=400,bbox_inches="tight")
+        #plt.savefig(os.path.join(out_paths["analysis"],f"dendogram_{coun}_2022.jpeg"),dpi=400,bbox_inches="tight")
         plt.show()
         
         # Proportion of cases assigned to each cluster
@@ -441,7 +445,8 @@ for coun in range(len(df_input_sub.columns)):
         pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
        
         # B. Get mean sequence for cluster with highest number of observations                
-        pred_ori=val_sce.loc[pr.idxmax(),:]
+        pred_ori=val_sce.loc[pr==pr.max(),:]
+        pred_ori=pred_ori.mean(axis=0)
         # Adjust by range (*max-min) and add min value
         preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
         # Append predictions
@@ -541,7 +546,7 @@ for coun in range(len(df_input_sub.columns)):
         plt.axhline(y=horizon/3, c='black', ls='--', lw=0.8)
         plt.xticks([])
         #plt.yticks([])
-        plt.savefig(os.path.join(out_paths["analysis"],f"dendogram_{coun}_2023.jpeg"),dpi=400,bbox_inches="tight")
+        #plt.savefig(os.path.join(out_paths["analysis"],f"dendogram_{coun}_2023.jpeg"),dpi=400,bbox_inches="tight")
         plt.show()
         
         # Proportion of cases assigned to each cluster        
@@ -639,7 +644,8 @@ for coun in range(len(df_input_sub.columns)):
         pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
         
         # B. Get mean sequence for cluster with highest number of observations                
-        pred_ori=val_sce.loc[pr.idxmax(),:]
+        pred_ori=val_sce.loc[pr==pr.max(),:]
+        pred_ori=pred_ori.mean(axis=0)
         # Adjust by range (*max-min) and add min value
         preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
         # Append predictions
@@ -759,7 +765,7 @@ plt.xlabel('Severity, Number of fatalities',size=20)
 plt.ylabel('Confidence, p*log(N)',size=20)
 plt.ylim(0.2,1.7)
 plt.legend(loc='upper left', bbox_to_anchor=(1.0, 1))
-plt.savefig(os.path.join(out_paths["analysis"],"compound_select.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"compound_select.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 df_sel_s = df_sel.sort_values(['Scale'])
@@ -915,7 +921,7 @@ plt.text(1500000, 0.005, "Null", size=20, color='black')
 plt.text(3000000, 0.29, "t-1", size=20, color='black')
 ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
 ax.set_xticks([0, 1500000,3000000,4500000,6000000,7500000])
-plt.savefig(os.path.join(out_paths["analysis"],"scatter1.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"scatter1.jpeg"),dpi=400,bbox_inches="tight")
 
 # Difference explained
 means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
@@ -953,7 +959,7 @@ plt.text(0.16, -0.002, 'Shape Finder', size=20,color="dimgray")
 plt.text(0.033, 0.008, 'Compound', size=20,color="black")
 ax.set_yticks([-0.2,-0.15,-0.1,-0.05,0,0.05])
 ax.set_xticks([0, 0.1,0.2,0.3,0.4,0.5])
-plt.savefig(os.path.join(out_paths["analysis"],"scatter2.jpeg"),dpi=400,bbox_inches="tight")
+#plt.savefig(os.path.join(out_paths["analysis"],"scatter2.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
 # Plot cases, where Shape finder has lower MSE then ViEWSFore 
