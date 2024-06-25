@@ -23,8 +23,8 @@ import os
 import seaborn as sns
 
 
-plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
-plt.rcParams.update(plot_params)
+#plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
+#plt.rcParams.update(plot_params)
 
 # ### Define out paths ------
 # home = '/Users/hannahfrank/'
@@ -768,6 +768,77 @@ plt.legend(loc='upper left', bbox_to_anchor=(1.0, 1))
 #plt.savefig(os.path.join(out_paths["analysis"],"compound_select.jpeg"),dpi=400,bbox_inches="tight")
 plt.show()
 
+fig,ax = plt.subplots(figsize=(12,8))
+n_df_sel= df_sel[df_sel['Scale'] <= 25000]
+p_df_sel= df_sel[df_sel['Scale'] > 25000]
+sub_n_df_sel = n_df_sel[(n_df_sel['log MSE']>=0) & (n_df_sel['Confidence']>=0.6)]
+sub_p_df_sel = n_df_sel[(n_df_sel['log MSE']<0) & (n_df_sel['Confidence']>=0.6)]
+plt.scatter(n_df_sel['Confidence'],n_df_sel['log MSE'])
+plt.scatter(p_df_sel['Confidence'],p_df_sel['log MSE'],marker='x',color='black')
+plt.scatter(sub_p_df_sel['Confidence'],sub_p_df_sel['log MSE'],marker='o',color='grey')
+plt.scatter(sub_n_df_sel['Confidence'],sub_n_df_sel['log MSE'],marker='o',color='purple')
+plt.hlines(0,0.2,2)
+plt.vlines(0.602,-5,5,linestyles='--',color='purple')
+plt.ylim(-5,5)
+plt.ylabel('MSE Log ratio',size=20)
+plt.xlabel('Confidence, p*log(N)',size=20)
+plt.show()
+
+pos_under = n_df_sel[(n_df_sel['log MSE']>=0) & (n_df_sel['Confidence']<0.6)]
+neg_under = n_df_sel[(n_df_sel['log MSE']<0) & (n_df_sel['Confidence']<0.6)]
+pos_over = n_df_sel[(n_df_sel['log MSE']>=0) & (n_df_sel['Confidence']>=0.6)]
+neg_over = n_df_sel[(n_df_sel['log MSE']<0) & (n_df_sel['Confidence']>=0.6)]
+len_neg_under = len(neg_under['log MSE'])
+len_pos_under = len(pos_under['log MSE'])
+len_neg_over = len(neg_over['log MSE'])
+len_pos_over = len(pos_over['log MSE'])
+total_under = len_neg_under + len_pos_under
+total_over = len_neg_over + len_pos_over
+norm_len_neg_under = len_neg_under / total_under
+norm_len_pos_under = len_pos_under / total_under
+norm_len_neg_over = len_neg_over / total_over
+norm_len_pos_over = len_pos_over / total_over
+categories = ['Before Cutoff', 'After Cutoff']
+neg_values = [norm_len_neg_under, norm_len_neg_over]
+pos_values = [norm_len_pos_under, norm_len_pos_over]
+mean_under_negative = neg_under['log MSE'].mean()
+mean_under_positive = pos_under['log MSE'].mean()
+mean_over_negative = neg_over['log MSE'].mean()
+mean_over_positive = pos_over['log MSE'].mean()
+
+
+bar_width = 0.5
+bar_positions = range(len(categories))
+fig, ax1 = plt.subplots(figsize=(10,8))
+ax1.yaxis.set_visible(False)
+bars1 = ax1.bar(bar_positions, neg_values, bar_width, label='Negative', color='lightgrey')
+bars2 = ax1.bar(bar_positions, pos_values, bar_width, bottom=neg_values, label='Positive', color='#CBC3E3')
+for bar in bars1:
+    height = bar.get_height()
+    ax1.text(bar.get_x() + bar.get_width() / 2, height / 2, f'{int(height*100)} %', ha='center', va='center', color='black', fontsize=14)
+for i, bar in enumerate(bars2):
+    height = bar.get_height() + neg_values[i]
+    ax1.text(bar.get_x() + bar.get_width() / 2, height - pos_values[i] / 2, f'{int(bar.get_height()*100)} %', ha='center', va='center', color='purple', fontsize=14)
+ax2 = ax1.twinx()
+ax2.set_ylabel('Mean Log Ratio', fontsize=14)
+ax2.set_ylim(-1,1)
+ax2.set_yticks(np.arange(0, max(mean_under_negative, mean_over_negative) + 10, 10)) 
+ax2.plot([0, 1], [mean_under_positive, mean_over_positive], marker='o', color='purple',label='Positive')
+ax2.plot([0, 1], [mean_under_negative, mean_over_negative], marker='o', color='grey',label='Negative')
+ax2.plot([0, 1], [n_df_sel[(n_df_sel['Confidence']<0.6)]['log MSE'].mean(), n_df_sel[(n_df_sel['Confidence']>=0.6)]['log MSE'].mean()], marker='o', color='black',label='Overall')
+ax2.axhline(0, color='black', linestyle='dotted')
+ax1.set_xticks(bar_positions)
+ax1.set_xticklabels(categories, fontsize=14)
+ax1.set_xlim(-0.5,1.5)
+ax1.set_xlabel('Percentage of Observations', fontsize=14)
+ax1.spines['top'].set_visible(False)
+ax1.spines['left'].set_visible(False)
+ax2.spines['top'].set_visible(False)
+ax2.spines['left'].set_visible(False)
+ax2.set_yticks([-0.5,0,0.5])
+ax2.legend(fontsize=12)
+plt.show()
+
 df_sel_s = df_sel.sort_values(['Scale'])
 df_sel_s=df_sel_s[df_sel_s['Confidence']>0.6] 
 df_sel_s=df_sel_s[df_sel_s['Scale']<25000]
@@ -984,3 +1055,28 @@ for i in range(len(df_input.columns)):
             plt.yticks([])
             plt.title(f'{df_input.columns[i]} - 2023')
             plt.show()
+
+
+for i in range(len(df_input.columns)): 
+    if (df_input.iloc[-24:-24+horizon,i]==0).all()==False:
+        if mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i])<mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i]):
+            if d_nn[i]<d_b[i]:
+                plt.plot(df_input.iloc[-24:-24+horizon,i].reset_index(drop=True),linewidth=2,color='black')
+                plt.plot(df_sf_1.iloc[:,i].reset_index(drop=True),linewidth=5,color='purple')
+                plt.plot(df_preds_test_1.iloc[:12,i].reset_index(drop=True),linewidth=2,color='grey')
+                plt.box(False)
+                plt.xticks([])
+                plt.yticks([])
+                plt.title(f'{df_input.columns[i]} - 2022')
+                plt.show()
+    if (df_input.iloc[-12:,i]==0).all()==False:
+        if mean_squared_error(df_input.iloc[-12:,i], df_sf_2.iloc[:,i])<mean_squared_error(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i]):
+            if d_nn2[i]<d_b2[i]:
+                plt.plot(df_input.iloc[-12:,i].reset_index(drop=True),linewidth=2,color='black')
+                plt.plot(df_sf_2.iloc[:,i].reset_index(drop=True),linewidth=5,color='purple')
+                plt.plot(df_preds_test_2.iloc[:12,i].reset_index(drop=True),linewidth=2,color='grey')
+                plt.box(False)
+                plt.xticks([])
+                plt.yticks([])
+                plt.title(f'{df_input.columns[i]} - 2023')
+                plt.show()
