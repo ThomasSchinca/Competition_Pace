@@ -754,36 +754,26 @@ df_sel['Confidence']=df_sel.iloc[:,2]*np.log10(df_sel.iloc[:,3])
 n_df_sel= df_sel[df_sel['log MSE'] <= 0]
 p_df_sel= df_sel[df_sel['log MSE'] > 0]
 
-fig,ax = plt.subplots(figsize=(12,8))
-plt.scatter(n_df_sel.iloc[:,1],n_df_sel.iloc[:,2]*np.log10(n_df_sel.iloc[:,3]),label='Negative log-ratio',color='black',s=50)
-plt.scatter(p_df_sel.iloc[:,1],p_df_sel.iloc[:,2]*np.log10(p_df_sel.iloc[:,3]),label='Positive log-ratio',color='gray',s=50)
-plt.xscale('log')
-x_values = np.linspace(0, 100000, 1000)
-plt.plot(x_values, np.exp(5.2*np.log10(x_values) - 25) + 0.6, color='black',linestyle='--',linewidth=3)
-plt.legend()
-plt.xlabel('Severity, Number of fatalities',size=20)
-plt.ylabel('Confidence, p*log(N)',size=20)
-plt.ylim(0.2,1.7)
-plt.legend(loc='upper left', bbox_to_anchor=(1.0, 1))
-#plt.savefig(os.path.join(out_paths["analysis"],"compound_select.jpeg"),dpi=400,bbox_inches="tight")
-plt.show()
-
-fig,ax = plt.subplots(figsize=(12,8))
+fig = plt.figure(figsize=(24, 10))
+gs = fig.add_gridspec(1, 2, width_ratios=[2, 1], wspace=0.1)
+ax1 = fig.add_subplot(gs[0, 0])
+ax1.scatter(n_df_sel.iloc[:,1], n_df_sel.iloc[:,2] * np.log10(n_df_sel.iloc[:,3]), label='Negative log-ratio', color='darkgrey', s=50)
+ax1.scatter(p_df_sel.iloc[:,1], p_df_sel.iloc[:,2] * np.log10(p_df_sel.iloc[:,3]), label='Positive log-ratio', color='purple', s=50)
+ax1.set_xscale('log')
+x_values = np.linspace(1, 100000, 1000)  # Start from 1 to avoid log(0)
+ax1.plot(x_values, np.exp(5.2 * np.log10(x_values) - 25) + 0.6, color='black', linestyle='--', linewidth=3, label='Selection Function')
+ax1.legend()
+ax1.set_xlabel('Severity, Number of fatalities', size=20)
+ax1.set_ylabel('Confidence, p*log(N)', size=20)
+ax1.set_ylim(0.2, 1.7)
+ax1.legend(fontsize=15)
+ax1.tick_params(axis='both', labelsize=15)
+ax1.spines['top'].set_visible(False)
+ax1.spines['right'].set_visible(False)
 n_df_sel= df_sel[df_sel['Scale'] <= 25000]
 p_df_sel= df_sel[df_sel['Scale'] > 25000]
 sub_n_df_sel = n_df_sel[(n_df_sel['log MSE']>=0) & (n_df_sel['Confidence']>=0.6)]
 sub_p_df_sel = n_df_sel[(n_df_sel['log MSE']<0) & (n_df_sel['Confidence']>=0.6)]
-plt.scatter(n_df_sel['Confidence'],n_df_sel['log MSE'])
-plt.scatter(p_df_sel['Confidence'],p_df_sel['log MSE'],marker='x',color='black')
-plt.scatter(sub_p_df_sel['Confidence'],sub_p_df_sel['log MSE'],marker='o',color='grey')
-plt.scatter(sub_n_df_sel['Confidence'],sub_n_df_sel['log MSE'],marker='o',color='purple')
-plt.hlines(0,0.2,2)
-plt.vlines(0.602,-5,5,linestyles='--',color='purple')
-plt.ylim(-5,5)
-plt.ylabel('MSE Log ratio',size=20)
-plt.xlabel('Confidence, p*log(N)',size=20)
-plt.show()
-
 pos_under = n_df_sel[(n_df_sel['log MSE']>=0) & (n_df_sel['Confidence']<0.6)]
 neg_under = n_df_sel[(n_df_sel['log MSE']<0) & (n_df_sel['Confidence']<0.6)]
 pos_over = n_df_sel[(n_df_sel['log MSE']>=0) & (n_df_sel['Confidence']>=0.6)]
@@ -798,55 +788,108 @@ norm_len_neg_under = len_neg_under / total_under
 norm_len_pos_under = len_pos_under / total_under
 norm_len_neg_over = len_neg_over / total_over
 norm_len_pos_over = len_pos_over / total_over
-categories = ['Before Cutoff', 'After Cutoff']
+categories = ['Below Function', 'Above Function']
 neg_values = [norm_len_neg_under, norm_len_neg_over]
 pos_values = [norm_len_pos_under, norm_len_pos_over]
 mean_under_negative = neg_under['log MSE'].mean()
 mean_under_positive = pos_under['log MSE'].mean()
 mean_over_negative = neg_over['log MSE'].mean()
 mean_over_positive = pos_over['log MSE'].mean()
-
-
+ax2 = fig.add_subplot(gs[0, 1])
 bar_width = 0.5
 bar_positions = range(len(categories))
-fig, ax1 = plt.subplots(figsize=(10,8))
-ax1.yaxis.set_visible(False)
-bars1 = ax1.bar(bar_positions, neg_values, bar_width, label='Negative', color='lightgrey')
-bars2 = ax1.bar(bar_positions, pos_values, bar_width, bottom=neg_values, label='Positive', color='#CBC3E3')
+bars1 = ax2.bar(bar_positions, neg_values, bar_width, label='Negative', color='lightgrey')
+bars2 = ax2.bar(bar_positions, pos_values, bar_width, bottom=neg_values, label='Positive', color='#CBC3E3')
 for bar in bars1:
     height = bar.get_height()
-    ax1.text(bar.get_x() + bar.get_width() / 2, height / 2, f'{int(height*100)} %', ha='center', va='center', color='black', fontsize=14)
+    ax2.text(bar.get_x() + bar.get_width() / 2, height / 2, f'{int(height * 100)} %', ha='center', va='center', color='black', fontsize=14)
 for i, bar in enumerate(bars2):
     height = bar.get_height() + neg_values[i]
-    ax1.text(bar.get_x() + bar.get_width() / 2, height - pos_values[i] / 2, f'{int(bar.get_height()*100)} %', ha='center', va='center', color='purple', fontsize=14)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Mean Log Ratio', fontsize=14)
-ax2.set_ylim(-1,1)
-ax2.set_yticks(np.arange(0, max(mean_under_negative, mean_over_negative) + 10, 10)) 
-ax2.plot([0, 1], [mean_under_positive, mean_over_positive], marker='o', color='purple',label='Positive')
-ax2.plot([0, 1], [mean_under_negative, mean_over_negative], marker='o', color='grey',label='Negative')
-ax2.plot([0, 1], [n_df_sel[(n_df_sel['Confidence']<0.6)]['log MSE'].mean(), n_df_sel[(n_df_sel['Confidence']>=0.6)]['log MSE'].mean()], marker='o', color='black',label='Overall')
-ax2.axhline(0, color='black', linestyle='dotted')
-ax1.set_xticks(bar_positions)
-ax1.set_xticklabels(categories, fontsize=14)
-ax1.set_xlim(-0.5,1.5)
-ax1.set_xlabel('Percentage of Observations', fontsize=14)
-ax1.spines['top'].set_visible(False)
-ax1.spines['left'].set_visible(False)
+    ax2.text(bar.get_x() + bar.get_width() / 2, height - pos_values[i] / 2, f'{int(bar.get_height() * 100)} %', ha='center', va='center', color='purple', fontsize=14)
+ax3 = ax2.twinx()
+ax3.set_ylabel('Mean Log Ratio', fontsize=20)
+ax3.set_ylim(-1, 1)
+ax3.set_yticks(np.arange(0, max(mean_under_negative, mean_over_negative) + 10, 10))
+ax3.plot([0, 1], [n_df_sel[n_df_sel['Confidence']<0.6]['log MSE'].mean(), n_df_sel[n_df_sel['Confidence']>=0.6]['log MSE'].mean()], marker='o', color='black', label='Mean')
+ax3.axhline(0, color='black', linestyle='dotted')
+ax2.set_xticks(bar_positions)
+ax2.set_xticklabels(categories, fontsize=20)
+ax2.set_xlim(-0.5, 1.5)
+#ax2.set_xlabel('Percentage of Observations', fontsize=20)
+ax3.set_yticks([-0.5, 0, 0.5],size=15)
+ax3.tick_params(axis='y', labelsize=15)
+ax2.set_yticks([])
 ax2.spines['top'].set_visible(False)
 ax2.spines['left'].set_visible(False)
-ax2.set_yticks([-0.5,0,0.5])
-ax2.legend(fontsize=12)
+ax3.spines['top'].set_visible(False)
+ax3.spines['left'].set_visible(False)
 plt.show()
+
 
 df_sel_s = df_sel.sort_values(['Scale'])
 df_sel_s=df_sel_s[df_sel_s['Confidence']>0.6] 
-df_sel_s=df_sel_s[df_sel_s['Scale']<25000]
+df_sel_s=df_sel_s[df_sel_s['Scale']<10000]
 df_keep_1 = df_sel_s.index
-ttest_1samp(df_sel_s.iloc[:,0],0)
-
+ttest_1samp(df_sel_s.iloc[:,0],0)[1]
+    
 df_try=pd.concat([df_sel_s.iloc[:,0],pd.Series([0]*(111-len(df_sel_s)))])
 ttest_1samp(df_try,0)
+
+bins = [-99,-5,-4,-3,-2, -1.5,-1,-0.75,-0.5,-0.25, 0,0.25,0.5, 0.75,1, 1.5,2,3,4,5,99]
+fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(8, 8))
+ax1.hist(df_sel['log MSE'], bins=bins, edgecolor='black')
+ax1.set_title('All points')
+ax1.set_ylabel('Frequency')
+ax2.hist(df_sel_s['log MSE'], bins=bins, edgecolor='black')
+ax2.set_title('confidence >0.6')
+ax2.set_xlabel('log MSE')
+ax2.set_ylabel('Frequency')
+plt.tight_layout()
+plt.xlim(-6,6)
+plt.show()
+
+# fig,ax = plt.subplots(figsize=(12,8))
+# plt.scatter(n_df_sel['Confidence'],n_df_sel['log MSE'])
+# plt.scatter(p_df_sel['Confidence'],p_df_sel['log MSE'],marker='x',color='black')
+# plt.scatter(sub_p_df_sel['Confidence'],sub_p_df_sel['log MSE'],marker='o',color='grey')
+# plt.scatter(sub_n_df_sel['Confidence'],sub_n_df_sel['log MSE'],marker='o',color='purple')
+# plt.hlines(0,0.2,2)
+# plt.vlines(0.602,-5,5,linestyles='--',color='purple')
+# plt.ylim(-5,5)
+# plt.ylabel('MSE Log ratio',size=20)
+# plt.xlabel('Confidence, p*log(N)',size=20)
+# plt.show()
+
+df_sel = pd.concat([df_tot_res.iloc[:,0].reset_index(drop=True),pr_scale,pr_main,len_mat],axis=1)
+df_sel = df_sel.dropna()
+df_sel.columns=['log MSE','Scale','Main_Pr','N_Matches']
+df_sel['Confidence']=df_sel.iloc[:,2]*np.log10(df_sel.iloc[:,3])
+#n_df_sel= df_sel[df_sel['log MSE'] <= -0.2]
+#p_df_sel= df_sel[df_sel['log MSE'] >= 0.2]
+n_df_sel= df_sel[df_sel['log MSE'] <= 0]
+p_df_sel= df_sel[df_sel['log MSE'] > 0]
+
+plt.figure(figsize=(14, 10))
+plt.scatter(n_df_sel.iloc[:,1], n_df_sel.iloc[:,2] * np.log10(n_df_sel.iloc[:,3]), color='darkgrey', s=50)
+plt.scatter(p_df_sel.iloc[:,1], p_df_sel.iloc[:,2] * np.log10(p_df_sel.iloc[:,3]), color='purple', s=50)
+plt.xscale('log')
+plt.xlabel('Severity, Number of fatalities', size=20)
+plt.ylabel('Confidence, p*log(N)', size=20)
+plt.hlines(0.6,0.6,1000000, color='black', linestyle='--', linewidth=1)
+plt.vlines(10000,0,2, color='black', linestyle='--', linewidth=1)
+plt.fill_betweenx(y=[0, 0.6], x1=0, x2=10000, color='grey', alpha=0.2, hatch='/',label='Confidence too low')
+plt.fill_betweenx(y=[0.6, 2], x1=10000, x2=100000000, color='grey', alpha=0.2, hatch='\\',label='Severity too high')
+plt.fill_betweenx(y=[0, 0.6], x1=10000, x2=100000000, color='grey', alpha=0.2, hatch='x')
+plt.xticks(fontsize=16)
+plt.yticks(fontsize=16)
+plt.xlim(0.6,200000)
+plt.ylim(0.1,1.8)
+ax = plt.gca()
+xticks = ax.get_xticks()
+yticks = ax.get_yticks()
+ax.set_xticklabels([f'{tick:.0f}' if tick != 10000 else f'$\mathbf{{{int(tick):,}}}$' for tick in xticks])
+ax.set_yticklabels([f'{tick:.1f}' if tick != 0.6000000000000001 else f'$\mathbf{{{tick:.1f}}}$' for tick in yticks])
+plt.show()
 
 ##################
 ### Evaluation ###
