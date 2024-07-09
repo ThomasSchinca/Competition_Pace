@@ -21,6 +21,7 @@ from dtaidistance import ed
 from scipy.stats import ttest_1samp
 import os
 import seaborn as sns
+from scipy.stats import linregress
 
 
 #plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
@@ -708,27 +709,27 @@ zero_to_half = ((pr_list >= 0) & (pr_list < 0.5)).sum() / len(pr_list) * 100
 half_to_02 = ((pr_list >= 0.5) & (pr_list < 1)).sum() / len(pr_list) * 100
 ones = (pr_list == 1).sum() / len(pr_list) * 100
 
-# Plot I
-categories = ['New scenario', 'Low probability (0 to 0.5)', 'High proba (0.5 to 1)', 'Sure 100\%']
-percentages = [nan_percentage, zero_to_half,half_to_02, ones]
-plt.figure(figsize=(10, 6))
-plt.bar(categories, percentages, color=['lightblue', 'lightblue', 'lightblue', 'lightblue'])
-plt.title('Proportion of cluster the input sequence was assigned to')
-plt.xlabel('Categories')
-plt.ylabel('Percentage')
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.show()
+# # Plot I
+# categories = ['New scenario', 'Low probability (0 to 0.5)', 'High proba (0.5 to 1)', 'Sure 100\%']
+# percentages = [nan_percentage, zero_to_half,half_to_02, ones]
+# plt.figure(figsize=(10, 6))
+# plt.bar(categories, percentages, color=['lightblue', 'lightblue', 'lightblue', 'lightblue'])
+# plt.title('Proportion of cluster the input sequence was assigned to')
+# plt.xlabel('Categories')
+# plt.ylabel('Percentage')
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+# plt.show()
 
-# Plot II
+# # Plot II
 df_tot_res = df_tot_res.dropna()
-plt.boxplot(df_tot_res[df_tot_res[2]=='New'][0],positions=[0])
-plt.boxplot(df_tot_res[df_tot_res[2]=='Low'][0],positions=[1])
-plt.boxplot(df_tot_res[df_tot_res[2]=='High'][0],positions=[2])
-plt.boxplot(df_tot_res[df_tot_res[2]=='Sure'][0],positions=[3])
-plt.xticks([0,1,2,3],['New', 'Low', 'High', 'Sure'])
-plt.title('Distribution of the proportion of cluster the input sequence was assigned to')
-plt.ylim(-3,3)
-plt.show()
+# plt.boxplot(df_tot_res[df_tot_res[2]=='New'][0],positions=[0])
+# plt.boxplot(df_tot_res[df_tot_res[2]=='Low'][0],positions=[1])
+# plt.boxplot(df_tot_res[df_tot_res[2]=='High'][0],positions=[2])
+# plt.boxplot(df_tot_res[df_tot_res[2]=='Sure'][0],positions=[3])
+# plt.xticks([0,1,2,3],['New', 'Low', 'High', 'Sure'])
+# plt.title('Distribution of the proportion of cluster the input sequence was assigned to')
+# plt.ylim(-3,3)
+# plt.show()
 
 # Plots for "sure" sequences 
 for i in range(len(df_sure)):
@@ -745,6 +746,7 @@ for i in range(len(df_sure)):
 ###############################################    
 
 # Selection criterion for compound   
+ind_keep_mse =  df_tot_res.index
 df_sel = pd.concat([df_tot_res.iloc[:,0].reset_index(drop=True),pr_scale,pr_main,len_mat],axis=1)
 df_sel = df_sel.dropna()
 df_sel.columns=['log MSE','Scale','Main_Pr','N_Matches']
@@ -830,23 +832,24 @@ df_sel_s = df_sel.sort_values(['Scale'])
 df_sel_s=df_sel_s[df_sel_s['Confidence']>0.6] 
 df_sel_s=df_sel_s[df_sel_s['Scale']<10000]
 df_keep_1 = df_sel_s.index
-ttest_1samp(df_sel_s.iloc[:,0],0)[1]
+ind_keep_mse=ind_keep_mse[df_keep_1]
+ttest_1samp(df_sel.iloc[:,0],0)[1]
     
 df_try=pd.concat([df_sel_s.iloc[:,0],pd.Series([0]*(111-len(df_sel_s)))])
 ttest_1samp(df_try,0)
 
-bins = [-99,-5,-4,-3,-2, -1.5,-1,-0.75,-0.5,-0.25, 0,0.25,0.5, 0.75,1, 1.5,2,3,4,5,99]
-fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(8, 8))
-ax1.hist(df_sel['log MSE'], bins=bins, edgecolor='black')
-ax1.set_title('All points')
-ax1.set_ylabel('Frequency')
-ax2.hist(df_sel_s['log MSE'], bins=bins, edgecolor='black')
-ax2.set_title('confidence >0.6')
-ax2.set_xlabel('log MSE')
-ax2.set_ylabel('Frequency')
-plt.tight_layout()
-plt.xlim(-6,6)
-plt.show()
+# bins = [-99,-5,-4,-3,-2, -1.5,-1,-0.75,-0.5,-0.25, 0,0.25,0.5, 0.75,1, 1.5,2,3,4,5,99]
+# fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(8, 8))
+# ax1.hist(df_sel['log MSE'], bins=bins, edgecolor='black')
+# ax1.set_title('All points')
+# ax1.set_ylabel('Frequency')
+# ax2.hist(df_sel_s['log MSE'], bins=bins, edgecolor='black')
+# ax2.set_title('confidence >0.6')
+# ax2.set_xlabel('log MSE')
+# ax2.set_ylabel('Frequency')
+# plt.tight_layout()
+# plt.xlim(-6,6)
+# plt.show()
 
 # fig,ax = plt.subplots(figsize=(12,8))
 # plt.scatter(n_df_sel['Confidence'],n_df_sel['log MSE'])
@@ -896,7 +899,7 @@ plt.show()
 ##################
 
 # Function to get difference explained
-def diff_explained(df_input,pred,k=5):
+def diff_explained(df_input,pred,k=5,horizon=12):
     d_nn=[]
     for i in range(len(df_input.columns)):
         real = df_input.iloc[:,i]
@@ -1123,3 +1126,298 @@ for i in range(len(df_input.columns)):
                 plt.yticks([])
                 plt.title(f'{df_input.columns[i]} - 2023')
                 plt.show()
+                
+                
+# =============================================================================
+# Horizon MSE
+# =============================================================================
+
+def err(y_true,y_pred):
+    return (np.log(y_true+1)-np.log(y_pred+1))**2
+
+# Calculate MSE
+dict_hor = {'SF':[],'Views':[],'Zeros':[],'t-1':[],'SV':[]}
+for h in range(12):
+    err_sf_pr=[]
+    err_views=[]
+    err_zero=[]
+    err_t1=[]
+    err_mix=[]
+    for i in range(len(df_input.columns)):   
+        if (df_input.iloc[-34:-24,i]==0).all() == True:
+            err_mix.append(err(df_input.iloc[-24+h,i], pd.Series(np.zeros((1,))).iloc[0]))
+        elif i in ind_keep_mse:
+            err_mix.append(err(df_input.iloc[-24+h,i], df_sf_1.iloc[h,i]))
+        elif i not in ind_keep_mse.tolist():
+            err_mix.append(err(df_input.iloc[-24+h,i], df_preds_test_1.iloc[h,i]))
+        err_sf_pr.append(err(df_input.iloc[-24+h,i], df_sf_1.iloc[h,i]))
+        err_views.append(err(df_input.iloc[-24+h,i], df_preds_test_1.iloc[h,i]))
+        err_zero.append(err(df_input.iloc[-24+h,i], pd.Series(np.zeros((1,))).iloc[0]))
+        err_t1.append(err(df_input.iloc[-24+h,i],df_input.iloc[-36+h,i])) 
+        
+        if (df_input.iloc[-22:-12,i]==0).all() == True:
+            err_mix.append(err(df_input.iloc[-12+h,i], pd.Series(np.zeros((1,))).iloc[0]))
+        elif i in ind_keep_mse-191:
+            err_mix.append(err(df_input.iloc[-12+h,i], df_sf_2.iloc[h,i]))
+        elif i not in ind_keep_mse-191:
+            err_mix.append(err(df_input.iloc[-12+h,i], df_preds_test_2.iloc[h,i]))
+            
+        err_sf_pr.append(err(df_input.iloc[-12+h,i], df_sf_2.iloc[h,i]))
+        err_views.append(err(df_input.iloc[-12+h,i], df_preds_test_2.iloc[h,i]))
+        err_zero.append(err(df_input.iloc[-12+h,i], pd.Series(np.zeros((1,))).iloc[0]))
+        err_t1.append(err(df_input.iloc[-12+h,i],df_input.iloc[-24+h,i]))
+    err_sf_pr = pd.Series(err_sf_pr)
+    err_views = pd.Series(err_views)
+    err_zero = pd.Series(err_zero)
+    err_t1 = pd.Series(err_t1)
+    err_mix = pd.Series(err_mix)
+    
+    dict_hor['SF'].append([err_sf_pr.mean(),err_sf_pr.std()])
+    dict_hor['Views'].append([err_views.mean(),err_views.std()])
+    dict_hor['Zeros'].append([err_zero.mean(),err_zero.std()])
+    dict_hor['t-1'].append([err_t1.mean(),err_t1.std()])
+    dict_hor['SV'].append([err_mix.mean(),err_mix.std()])
+
+test = pd.DataFrame(dict_hor)
+horizons = np.arange(len(test))+1
+plt.figure(figsize=(14, 8))
+for column in test.columns[[0,1,3,4]]:
+    means = test[column].apply(lambda x: x[0])
+    stds = test[column].apply(lambda x: x[1])
+    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(382), label=column, capsize=5, marker='o')
+plt.xlabel('Horizon')
+plt.ylabel('MSE of log forecast values')
+#plt.yscale('log')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+# =============================================================================
+# DE exp factor 
+# =============================================================================
+de_res = []
+de_res_std=[]
+for k_fac in range(1,11):    
+    # Calculate difference explaines
+    d_nn = diff_explained(df_input.iloc[-24:-24+horizon],df_sf_1,k=k_fac)
+    d_nn2 = diff_explained(df_input.iloc[-12:],df_sf_2,k=k_fac)
+    d_nn = np.concatenate([d_nn,d_nn2])
+    
+    d_b = diff_explained(df_input.iloc[-24:-24+horizon],df_preds_test_1.iloc[:12],k=k_fac)
+    d_b2 = diff_explained(df_input.iloc[-12:],df_preds_test_2.iloc[:12],k=k_fac)
+    d_b = np.concatenate([d_b,d_b2])
+    
+    d_null = diff_explained(df_input.iloc[-24:-24+horizon],pd.DataFrame(np.zeros((horizon,len(df_input.columns)))),k=k_fac)
+    d_null2 = diff_explained(df_input.iloc[-12:],pd.DataFrame(np.zeros((horizon,len(df_input.columns)))),k=k_fac)
+    d_null = np.concatenate([d_null,d_null2])
+    
+    d_t1 = diff_explained(df_input.iloc[-24:-24+horizon],df_input.iloc[-24-horizon:-24],k=k_fac)
+    d_t12 = diff_explained(df_input.iloc[-12:],df_input.iloc[-24:-24+horizon],k=k_fac)
+    d_t1= np.concatenate([d_t1,d_t12])
+    
+    d_mix = d_b.copy()
+    d_mix[ind_keep[df_keep_1]] = d_nn[ind_keep[df_keep_1]]
+    d_nn = d_nn[~np.isnan(d_nn)]
+    d_b = d_b[~np.isnan(d_b)]
+    d_null = d_null[~np.isnan(d_null)]
+    d_t1= d_t1[~np.isnan(d_t1)]
+    d_mix = d_mix[~np.isnan(d_mix)]
+    
+    de_res.append([d_nn.mean(),d_b.mean(),d_null.mean(),d_t1.mean(),d_mix.mean()])
+    de_res_std.append([d_nn.std(),d_b.std(),d_null.std(),d_t1.std(),d_mix.std()])
+
+de_res=pd.DataFrame(de_res)
+de_res_std = pd.DataFrame(de_res_std)
+
+de_res.columns=test.columns
+de_res_std.columns=test.columns
+horizons = np.arange(len(de_res))+1
+
+plt.figure(figsize=(14, 8))
+for column in de_res.columns:
+    means = de_res[column]
+    stds = de_res_std[column]
+    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(382), label=column, capsize=5, marker='o')
+plt.xlabel('Exp Factor')
+plt.ylabel('Diff. Explained')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+df_t = pd.DataFrame([0,0.2,0,0.5,0,0.96,0.2,0,0.15,0])
+df_1 = pd.DataFrame([0.05,0.05,0.6,0.25,0,0.75,0.1,0,0,0])
+df_2 = pd.DataFrame([1,0,1,0,1,0,1,0,1,0])
+df_3 = pd.DataFrame([0.1,0.2,0.05,0.25,0.1,0.4,0.1,0,0.05,0])
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 1]})
+ax1.plot(df_1, label='M1', marker='o',color='purple',linewidth=3)
+ax1.plot(df_2, label='M2', marker='o',color='darkgrey',linewidth=3)
+ax1.plot(df_3, label='M3', marker='o',color='grey',linewidth=3)
+ax1.plot(df_t, label='True',color='black',linewidth=5)
+ax1.spines['left'].set_visible(False)
+ax1.spines['top'].set_visible(False)
+ax1.spines['right'].set_visible(False)
+ax1.spines['bottom'].set_visible(False)
+ax1.set_xticks([])
+ax1.set_yticks([])
+ax1.set_title('Model Comparisons',fontsize=20)
+k_values = [1, 5, 10]
+models = ['M1', 'M2', 'M3']
+differences = {
+    'M1': [diff_explained(df_t, df_1, k, horizon=10)[0] for k in k_values],
+    'M2': [diff_explained(df_t, df_2, k, horizon=10)[0] for k in k_values],
+    'M3': [diff_explained(df_t, df_3, k, horizon=10)[0] for k in k_values],
+}
+podiums = {k: sorted(models, key=lambda m: differences[m][i]) for i, k in enumerate(k_values)}
+bar_width = 0.2
+col=['purple','lightgrey','grey','black']
+x = np.arange(len(k_values))
+for i, model in enumerate(models):
+    ax2.bar(x + i * bar_width, [differences[model][j] for j in range(len(k_values))], bar_width, label=model,color=col[i])
+ax2.set_xticks(x + bar_width)
+ax2.set_xticklabels(['k=1', 'k=5', 'k=10'],fontsize=15)
+ax2.set_title('Difference Explained',fontsize=20)
+ax2.spines['left'].set_visible(False)
+ax2.spines['top'].set_visible(False)
+ax2.spines['right'].set_visible(False)
+ax2.set_yticks([])
+ax2.legend()
+plt.tight_layout()
+plt.show()
+
+
+
+# =============================================================================
+# Variable ? 
+# =============================================================================
+mean_d=[]
+std_d=[]
+per_d=[]
+sca=[]
+for i in range(len(df_input.columns)):   
+    if (df_input.iloc[-34:-24,i]==0).all()==False:
+        ser = (df_input.iloc[-34:-24,i] - df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
+        diff = ser.diff()
+        mean_d.append(abs(diff).mean())
+        std_d.append(abs(diff).std())
+        per_d.append((diff>0).mean())
+        sca.append(df_input.iloc[-34:-24,i].sum())
+for i in range(len(df_input.columns)):   
+    if (df_input.iloc[-22:-12,i]==0).all()==False:
+        ser = (df_input.iloc[-22:-12,i] - df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
+        diff = ser.diff()
+        mean_d.append(abs(diff).mean())
+        std_d.append(abs(diff).std())
+        per_d.append((diff>0).mean()) 
+        sca.append(df_input.iloc[-22:-12,i].sum())
+        
+        
+df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE']]).T
+df_var = df_var[df_var.iloc[:,3]<10000]        
+
+
+mean_b = df_var[df_var.iloc[:,1]<0.22][4].mean()
+mean_a = df_var[df_var.iloc[:,1]>0.22][4].mean()
+plt.scatter(df_var.iloc[:,1],df_var.iloc[:,4],label='STD Diff')
+plt.hlines(mean_b,0.13,0.22,color='blue')
+plt.hlines(mean_a,0.22,0.53,color='black')
+plt.axhline(0,linestyle='--',color='black',alpha=0.2)
+#plt.axvline(0.22,linestyle='--',color='blue')
+plt.show()
+
+plt.scatter(df_var.iloc[:,0],df_var.iloc[:,1],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-0.5,vmax=0.5)
+plt.hlines(0.37,0.3,0.6,color='red',linestyle='--')
+plt.vlines(0.3,0.37,0.5,color='red',linestyle='--')
+plt.show()
+
+
+# =============================================================================
+# Worse cases
+# =============================================================================
+
+plt.plot(df_input.iloc[-22:-12,175].reset_index(drop=True),linewidth=2,color='black')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.show()
+
+plt.plot(df_input.iloc[-12:,175].reset_index(drop=True),linewidth=2,color='black')
+plt.plot(df_sf_2.iloc[:,175].reset_index(drop=True),linewidth=5,color='purple')
+plt.plot(df_preds_test_2.iloc[:12,175].reset_index(drop=True),linewidth=2,color='grey')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.title(f'{df_input.columns[175]} - 2023')
+plt.show()
+
+
+plt.plot(df_input.iloc[-22:-12,123].reset_index(drop=True),linewidth=2,color='black')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.show()
+
+plt.plot(df_input.iloc[-12:,123].reset_index(drop=True),linewidth=2,color='black')
+plt.plot(df_sf_2.iloc[:,123].reset_index(drop=True),linewidth=5,color='purple')
+plt.plot(df_preds_test_2.iloc[:12,123].reset_index(drop=True),linewidth=2,color='grey')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.title(f'{df_input.columns[123]} - 2023')
+plt.show()
+
+
+plt.plot(df_input.iloc[-34:-24,190].reset_index(drop=True),linewidth=2,color='black')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.show()
+
+plt.plot(df_input.iloc[-24:-12,190].reset_index(drop=True),linewidth=2,color='black')
+plt.plot(df_sf_1.iloc[:,190].reset_index(drop=True),linewidth=5,color='purple')
+plt.plot(df_preds_test_1.iloc[:12,190].reset_index(drop=True),linewidth=2,color='grey')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.title(f'{df_input.columns[190]} - 2022')
+plt.show()
+
+
+# =============================================================================
+# Best cases  
+# =============================================================================
+
+plt.plot(df_input.iloc[-34:-24,177].reset_index(drop=True),linewidth=2,color='black')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.show()
+
+plt.plot(df_input.iloc[-24:-12,177].reset_index(drop=True),linewidth=2,color='black')
+plt.plot(df_sf_1.iloc[:,177].reset_index(drop=True),linewidth=5,color='purple')
+plt.plot(df_preds_test_1.iloc[:12,177].reset_index(drop=True),linewidth=2,color='grey')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.title(f'{df_input.columns[177]} - 2022')
+plt.show()
+
+plt.plot(df_input.iloc[-24:-12,179].reset_index(drop=True),linewidth=2,color='black')
+plt.plot(df_sf_1.iloc[:,179].reset_index(drop=True),linewidth=5,color='purple')
+plt.plot(df_preds_test_1.iloc[:12,179].reset_index(drop=True),linewidth=2,color='grey')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.title(f'{df_input.columns[179]} - 2022')
+plt.show()
+
+plt.plot(df_input.iloc[-12:,110].reset_index(drop=True),linewidth=2,color='black')
+plt.plot(df_sf_2.iloc[:,110].reset_index(drop=True),linewidth=5,color='purple')
+plt.plot(df_preds_test_2.iloc[:12,110].reset_index(drop=True),linewidth=2,color='grey')
+plt.box(False)
+plt.xticks([])
+plt.yticks([])
+plt.title(f'{df_input.columns[110]} - 2023')
+plt.show()
