@@ -680,8 +680,157 @@ class finder():
                 param.append(sub)
         return pd.DataFrame(param,columns=quantile)
         
-
-
+    def find_patterns_lim(self, metric='euclidean', min_d=0.5, dtw_sel=0, select=True, min_mat=0, d_increase=None):
+        """
+        Finds custom patterns in the given dataset using the interactive shape finder.
+    
+        Args:
+            metric (str, optional): The distance metric to use for shape matching. 'euclidean' or 'dtw'. Defaults to 'euclidean'.
+            min_d (float, optional): The minimum distance threshold for a matching sequence. Defaults to 0.5.
+            dtw_sel (int, optional): The window size variation for dynamic time warping (Only for 'dtw' mode). Defaults to 0.
+            select (bool, optional): Whether to include overlapping patterns. Defaults to True.
+        """
+        # Clear any previously stored sequences
+        self.sequences = []
+        
+        # Check if dtw_sel is zero when metric is 'euclidean'
+        if metric=='euclidean':
+            dtw_sel=0
+    
+        # Extract individual columns (time series) from the data
+        seq = []
+        for i in range(len(self.data.columns)): 
+            seq.append(self.data.iloc[:, i])
+    
+        # Normalize each column (time series)
+        seq_n = []
+        for i in seq:
+            seq_n.append((i - i.mean()) / i.std())
+    
+        # Get exclude list, intervals, and a testing sequence for pattern matching
+        exclude, interv, n_test = int_exc(seq, self.Shape.window)
+    
+        # Convert custom shape values to a pandas Series and normalize it
+        seq1 = pd.Series(data=self.Shape.values)
+        if seq1.var() != 0.0:
+            seq1 = (seq1 - seq1.min()) / (seq1.max() - seq1.min())
+        else :    
+            seq1 = [0.5]*len(seq1)
+        seq1 = np.array(seq1)
+    
+        # Initialize the list to store the found sequences that match the custom shape
+        tot = []
+    
+        if dtw_sel == 0:
+            # Loop through the testing sequence
+            for i in range(len(n_test)):
+                # Check if the current index is not in the exclude list
+                if i not in exclude:
+                    seq2 = n_test[i:i + self.Shape.window]
+                    if seq2.var() != 0.0:
+                        seq2 = (seq2 - seq2.min()) / (seq2.max() - seq2.min())
+                    else:
+                        seq2 = np.array([0.5]*len(seq2))
+                    try:
+                        if metric == 'euclidean':
+                            # Calculate the Euclidean distance between the custom shape and the current window
+                            dist = ed.distance(seq1, seq2)
+                        elif metric == 'dtw':
+                            # Calculate the Dynamic Time Warping distance between the custom shape and the current window
+                            dist = dtw.distance(seq1, seq2,use_c=True)
+                        tot.append([i, dist, self.Shape.window])
+                    except:
+                        # Ignore any exceptions (e.g., divide by zero)
+                        pass
+        else:
+            # Loop through the range of window size variations (dtw_sel)
+            for lop in range(int(-dtw_sel), int(dtw_sel) + 1):
+                # Get exclude list, intervals, and a testing sequence for pattern matching with the current window size
+                exclude, interv, n_test = int_exc(seq_n, self.Shape.window + lop)
+                for i in range(len(n_test)):
+                    # Check if the current index is not in the exclude list
+                    if i not in exclude:
+                        seq2 = n_test[i:i + int(self.Shape.window + lop)]
+                        if seq2.var() != 0.0:
+                            seq2 = (seq2 - seq2.min()) / (seq2.max() - seq2.min())
+                        else:
+                            seq2 = np.array([0.5]*len(seq2))
+                        try:
+                            # Calculate the Dynamic Time Warping distance between the custom shape and the current window
+                            dist = dtw.distance(seq1, seq2)
+                            tot.append([i, dist, self.Shape.window + lop])
+                        except:
+                            # Ignore any exceptions (e.g., divide by zero)
+                            pass
+    
+        # Create a DataFrame from the list of sequences and distances, sort it by distance, and filter based on min_d
+        tot = pd.DataFrame(tot)
+        tot = tot.sort_values([1])
+        tot_cut = tot[tot[1] < min_d]
+        toti = tot_cut[0]
+    
+        if select:
+            n = len(toti)
+            diff_data = {f'diff{i}': toti.diff(i) for i in range(1, n + 1)}
+            diff_df = pd.DataFrame(diff_data).fillna(self.Shape.window)
+            diff_df = abs(diff_df)
+            tot_cut = tot_cut[diff_df.min(axis=1) >= (self.Shape.window / 2)]
+    
+        if len(tot_cut) > min_mat:
+            # If there are selected patterns, store them along with their distances in the 'sequences' list
+            for c_lo in range(len(tot_cut)):
+                i = tot_cut.iloc[c_lo, 0]
+                win_l = int(tot_cut.iloc[c_lo, 2])
+                exclude, interv, n_test = int_exc(seq_n, win_l)
+                col = seq[bisect.bisect_right(interv, i) - 1].name
+                index_obs = seq[bisect.bisect_right(interv, i) - 1].index[i - interv[bisect.bisect_right(interv, i) - 1]]
+                obs = self.data.loc[index_obs:, col].iloc[:win_l]
+                self.sequences.append([obs, tot_cut.iloc[c_lo, 1]])
+        else:
+            if d_increase==None:
+                print('Not enough patterns found')
+            else:
+                flag_end=False
+                while flag_end==False:
+                    min_d = min_d + d_increase
+                    tot_cut = tot[tot[1] < min_d]
+                    toti = tot_cut[0]
+                    if select:
+                        n = len(toti)
+                        diff_data = {f'diff{i}': toti.diff(i) for i in range(1, n + 1)}
+                        diff_df = pd.DataFrame(diff_data).fillna(self.Shape.window)
+                        diff_df = abs(diff_df)
+                        tot_cut = tot_cut[diff_df.min(axis=1) >= (self.Shape.window / 2)]
+                    if len(tot_cut) > min_mat:
+                        for c_lo in range(len(tot_cut)):
+                            i = tot_cut.iloc[c_lo, 0]
+                            win_l = int(tot_cut.iloc[c_lo, 2])
+                            exclude, interv, n_test = int_exc(seq_n, win_l)
+                            col = seq[bisect.bisect_right(interv, i) - 1].name
+                            index_obs = seq[bisect.bisect_right(interv, i) - 1].index[i - interv[bisect.bisect_right(interv, i) - 1]]
+                            obs = self.data.loc[index_obs:, col].iloc[:win_l]
+                            self.sequences.append([obs, tot_cut.iloc[c_lo, 1]])
+                        flag_end=True
+    
+    
+    def create_sce_predict(self,horizon=6):
+        if len(self.sequences) == 0:
+            raise 'No shape found, please fit before predict.'
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in self.sequences]
+        pred_seq=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            date=self.data.index.get_loc(last_date)
+            if date+horizon<len(self.data):
+                seq=self.data.iloc[date+1:date+1+horizon,self.data.columns.get_loc(col)].reset_index(drop=True)
+                seq = (seq - mi) / (ma - mi)
+                pred_seq.append(seq.tolist())
+        tot_seq=pd.DataFrame(pred_seq)
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        val_sce = tot_seq.groupby('Cluster').mean()
+        val_sce.index = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),3)
+        self.val_sce = val_sce
 
 
 

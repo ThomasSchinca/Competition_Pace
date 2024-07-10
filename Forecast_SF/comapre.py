@@ -21,8 +21,7 @@ from dtaidistance import ed
 from scipy.stats import ttest_1samp
 import os
 import seaborn as sns
-from scipy.stats import linregress
-
+import matplotlib.colors as mcolors
 
 #plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
 #plt.rcParams.update(plot_params)
@@ -1187,7 +1186,103 @@ for column in test.columns[[0,1,3,4]]:
     plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(382), label=column, capsize=5, marker='o')
 plt.xlabel('Horizon')
 plt.ylabel('MSE of log forecast values')
-#plt.yscale('log')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+# =============================================================================
+# Horizon DE
+# =============================================================================
+
+def diff_explained_h(df_input,pred,k=5,horizon=12):
+    real = df_input.copy()
+    real=real.reset_index(drop=True)
+    sf = pred.copy()
+    sf=sf.reset_index(drop=True)
+    max_s=[]
+    if (real==0).all()==False:
+        for value in real[1:].index:
+            if (real[value]==real[value-1]):
+                max_exp=0
+            else:
+                max_exp=0
+                if (real[value]-real[value-1])/(sf[value]-sf[value-1])>0 and sf[value]-sf[value-1] != 0:
+                    t=abs(((real[value]-real[value-1])-(sf[value]-sf[value-1]))/(real[value]-real[value-1]))
+                    max_exp = np.exp(-(k*t))
+                else:
+                    if value==horizon-1:
+                        if (real[value]-real[value-1])/(sf[value-1]-sf[value-2])>0 and sf[value-1]-sf[value-2] != 0:
+                            t=abs(((real[value]-real[value-1])-(sf[value-1]-sf[value-2]))/(real[value]-real[value-1]))/2
+                            if max_exp<np.exp(-(k*t)):
+                                max_exp = np.exp(-(k*t))
+                    elif value==1:
+                        if (real[value]-real[value-1])/(sf[value+1]-sf[value])>0 and sf[value+1]-sf[value] != 0:
+                            t=abs(((real[value]-real[value-1])-(sf[value+1]-sf[value]))/(real[value]-real[value-1]))/2
+                            if max_exp<np.exp(-(k*t)):
+                                max_exp = np.exp(-(k*t))
+                    else : 
+                        if (real[value]-real[value-1])/(sf[value-1]-sf[value-2])>0 and sf[value-1]-sf[value-2] != 0:
+                            t=abs(((real[value]-real[value-1])-(sf[value-1]-sf[value-2]))/(real[value]-real[value-1]))/2
+                            if max_exp<np.exp(-(k*t)):
+                                max_exp = np.exp(-(k*t))
+                        if (real[value]-real[value-1])/(sf[value+1]-sf[value])>0 and sf[value+1]-sf[value] != 0:
+                            t=abs(((real[value]-real[value-1])-(sf[value+1]-sf[value]))/(real[value]-real[value-1]))/2
+                            if max_exp<np.exp(-(k*t)):
+                                max_exp = np.exp(-(k*t))
+            max_s.append(max_exp)
+    else:
+        max_s.append([0]*(horizon-1)) 
+    return(max_s)
+
+horizon=12
+err_sf_pr=[]
+err_views=[]
+err_zero=[]
+err_t1=[]
+err_mix=[]
+for i in range(len(df_input.columns)):   
+    if (df_input.iloc[-24:-24+horizon,i]==0).all()==False:
+        err_sf_pr.append(diff_explained_h(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i]))
+        err_views.append(diff_explained_h(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i]))
+        err_zero.append(diff_explained_h(df_input.iloc[-24:-24+horizon,i], pd.Series(np.zeros((horizon,)))))
+        err_t1.append(diff_explained_h(df_input.iloc[-24:-24+horizon,i],df_input.iloc[-24-horizon:-24,i]))
+        if i in ind_keep_mse:
+            err_mix.append(diff_explained_h(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i]))
+        else:
+            err_mix.append(diff_explained_h(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i]))
+for i in range(len(df_input.columns)):   
+    if (df_input.iloc[-12:,i]==0).all()==False:
+        err_sf_pr.append(diff_explained_h(df_input.iloc[-12:,i], df_sf_2.iloc[:,i]))
+        err_views.append(diff_explained_h(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i]))
+        err_zero.append(diff_explained_h(df_input.iloc[-12:,i], pd.Series(np.zeros((horizon,)))))
+        err_t1.append(diff_explained_h(df_input.iloc[-12:,i],df_input.iloc[-24:-24+horizon,i]))
+        if i in ind_keep_mse-191:
+            err_mix.append(diff_explained_h(df_input.iloc[-12:,i], df_sf_2.iloc[:,i]))
+        else:
+            err_mix.append(diff_explained_h(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i]))
+
+mean_de=[]
+std_de=[]
+for mod in [err_sf_pr,err_views,err_zero,err_t1,err_mix]:
+    mod = pd.DataFrame(mod)
+    mean_de.append(mod.mean())
+    std_de.append(mod.std())
+
+mean_de=pd.concat(mean_de,axis=1)
+std_de =pd.concat(std_de,axis=1)
+
+mean_de.columns=['SF','Views','Zeros','t-1','SV']
+std_de.columns = ['SF','Views','Zeros','t-1','SV']
+
+horizons = np.arange(11)+1
+plt.figure(figsize=(14, 8))
+for column in mean_de.columns:
+    means = mean_de[column]
+    stds = std_de[column]
+    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(136), label=column, capsize=5, marker='o')
+plt.xlabel('Horizon')
+plt.ylabel('DE of log forecast values')
 plt.legend()
 plt.grid(True)
 plt.show()
@@ -1247,9 +1342,13 @@ plt.show()
 
 
 df_t = pd.DataFrame([0,0.2,0,0.5,0,0.96,0.2,0,0.15,0])
-df_1 = pd.DataFrame([0.05,0.05,0.6,0.25,0,0.75,0.1,0,0,0])
+df_1 = pd.DataFrame([0.05,0.05,0.6,0.25,0,0.7,0.05,0,0,0])
 df_2 = pd.DataFrame([1,0,1,0,1,0,1,0,1,0])
-df_3 = pd.DataFrame([0.1,0.2,0.05,0.25,0.1,0.4,0.1,0,0.05,0])
+# df_3 = pd.DataFrame([0.1,0.2,0.05,0.25,0.1,0.4,0.1,0,0.05,0])
+
+# df_3 = pd.DataFrame([0.2,0.3,0.2,0.25,0.2,0.35,0.15,0,0,0.1])
+df_3 = pd.DataFrame([0.5,0.6,0.5,0.55,0.5,0.65,0.55,0.12,0,0.2])
+
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={'width_ratios': [3, 1]})
 ax1.plot(df_1, label='M1', marker='o',color='purple',linewidth=3)
@@ -1295,6 +1394,9 @@ plt.show()
 mean_d=[]
 std_d=[]
 per_d=[]
+mean_m=[]
+std_m=[]
+per_m=[]
 sca=[]
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-34:-24,i]==0).all()==False:
@@ -1303,6 +1405,9 @@ for i in range(len(df_input.columns)):
         mean_d.append(abs(diff).mean())
         std_d.append(abs(diff).std())
         per_d.append((diff>0).mean())
+        mean_m.append(ser.mean())
+        std_m.append(ser.std())
+        per_m.append((ser>ser.mean()).mean())
         sca.append(df_input.iloc[-34:-24,i].sum())
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-22:-12,i]==0).all()==False:
@@ -1311,77 +1416,105 @@ for i in range(len(df_input.columns)):
         mean_d.append(abs(diff).mean())
         std_d.append(abs(diff).std())
         per_d.append((diff>0).mean()) 
+        mean_m.append(ser.mean())
+        std_m.append(ser.std())
+        per_m.append((ser>ser.mean()).mean())
         sca.append(df_input.iloc[-22:-12,i].sum())
         
-        
-df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE']]).T
-df_var = df_var[df_var.iloc[:,3]<10000]        
+df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE'],mean_m,std_m,per_m]).T
 
+# mean_b = df_var[df_var.iloc[:,1]<0.22][4].mean()
+# mean_a = df_var[df_var.iloc[:,1]>0.22][4].mean()
+# plt.scatter(df_var.iloc[:,1],df_var.iloc[:,4],label='STD Diff')
+# plt.hlines(mean_b,0.13,0.22,color='blue')
+# plt.hlines(mean_a,0.22,0.53,color='black')
+# plt.axhline(0,linestyle='--',color='black',alpha=0.2)
+# plt.show()
 
-mean_b = df_var[df_var.iloc[:,1]<0.22][4].mean()
-mean_a = df_var[df_var.iloc[:,1]>0.22][4].mean()
-plt.scatter(df_var.iloc[:,1],df_var.iloc[:,4],label='STD Diff')
-plt.hlines(mean_b,0.13,0.22,color='blue')
-plt.hlines(mean_a,0.22,0.53,color='black')
-plt.axhline(0,linestyle='--',color='black',alpha=0.2)
-#plt.axvline(0.22,linestyle='--',color='blue')
+# plt.scatter(df_var.iloc[:,0],df_var.iloc[:,1],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-0.5,vmax=0.5)
+# plt.hlines(0.37,0.3,0.6,color='red',linestyle='--')
+# plt.vlines(0.3,0.37,0.5,color='red',linestyle='--')
+# plt.show()
+
+# mean_valu=[]
+# for i in pd.Series([*range(1,8)])/10:
+#     mean_valu.append(df_var[df_var.iloc[:,7]==i][4].mean())
+# plt.scatter(df_var.iloc[:,7],df_var.iloc[:,4],label='STD Diff')
+# plt.plot(pd.Series([*range(1,8)])/10,mean_valu,label='Mean')
+# plt.axhline(0,linestyle='--',color='black',alpha=0.2)
+# plt.show()
+
+df_subr=df_var[(df_var.iloc[:,1]<0.27) & (df_var.iloc[:,5]>0.44)][4].mean()
+norm = mcolors.Normalize(vmin=-1, vmax=1)
+cmap = plt.get_cmap('RdBu')
+color = cmap(norm(df_subr))
+plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1)
+plt.axhline(0.44,linestyle='--',color='black',alpha=0.2)
+plt.axvline(0.27,linestyle='--',color='black',alpha=0.2)
+plt.fill_betweenx(y=[0.44, 0.8], x1=0.27, color=color, alpha=0.3)
+plt.xlim(0.1,0.55)
+plt.ylim(0.04,0.67)
 plt.show()
 
-plt.scatter(df_var.iloc[:,0],df_var.iloc[:,1],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-0.5,vmax=0.5)
-plt.hlines(0.37,0.3,0.6,color='red',linestyle='--')
-plt.vlines(0.3,0.37,0.5,color='red',linestyle='--')
+df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.4)][4].mean()
+norm = mcolors.Normalize(vmin=-1, vmax=1)
+cmap = plt.get_cmap('RdBu')
+color = cmap(norm(df_subr))
+plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1)
+plt.scatter(df_var.iloc[:,6], df_var.iloc[:,5], c=df_var.iloc[:,4], cmap='RdBu', label='STD Diff', vmin=-1, vmax=1)
+plt.axhline(0.4, linestyle='--', color='black', alpha=0.2)
+plt.axvline(0.37, linestyle='--', color='black', alpha=0.2)
+plt.fill_betweenx(y=[0, 0.4], x1=0.37, x2=0.5, color=color, alpha=0.3)
+plt.xlim(0.25,0.45)
+plt.ylim(0.05,0.67)
 plt.show()
+
 
 
 # =============================================================================
 # Worse cases
 # =============================================================================
-
-plt.plot(df_input.iloc[-22:-12,175].reset_index(drop=True),linewidth=2,color='black')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.show()
-
-plt.plot(df_input.iloc[-12:,175].reset_index(drop=True),linewidth=2,color='black')
-plt.plot(df_sf_2.iloc[:,175].reset_index(drop=True),linewidth=5,color='purple')
-plt.plot(df_preds_test_2.iloc[:12,175].reset_index(drop=True),linewidth=2,color='grey')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.title(f'{df_input.columns[175]} - 2023')
-plt.show()
-
-
-plt.plot(df_input.iloc[-22:-12,123].reset_index(drop=True),linewidth=2,color='black')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.show()
-
-plt.plot(df_input.iloc[-12:,123].reset_index(drop=True),linewidth=2,color='black')
-plt.plot(df_sf_2.iloc[:,123].reset_index(drop=True),linewidth=5,color='purple')
-plt.plot(df_preds_test_2.iloc[:12,123].reset_index(drop=True),linewidth=2,color='grey')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.title(f'{df_input.columns[123]} - 2023')
-plt.show()
-
-
-plt.plot(df_input.iloc[-34:-24,190].reset_index(drop=True),linewidth=2,color='black')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.show()
-
-plt.plot(df_input.iloc[-24:-12,190].reset_index(drop=True),linewidth=2,color='black')
-plt.plot(df_sf_1.iloc[:,190].reset_index(drop=True),linewidth=5,color='purple')
-plt.plot(df_preds_test_1.iloc[:12,190].reset_index(drop=True),linewidth=2,color='grey')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.title(f'{df_input.columns[190]} - 2022')
+def remove_box(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+fig, axs = plt.subplots(3, 2, figsize=(15, 10))
+axs[0, 0].plot(df_input.iloc[-22:-12, 175].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[0, 0])
+axs[0, 0].set_xticks([])
+axs[0, 0].set_yticks([])
+axs[0, 1].plot(df_input.iloc[-12:, 175].reset_index(drop=True), linewidth=2, color='black')
+axs[0, 1].plot(df_sf_2.iloc[:, 175].reset_index(drop=True), linewidth=5, color='purple')
+axs[0, 1].plot(df_preds_test_2.iloc[:12, 175].reset_index(drop=True), linewidth=2, color='grey')
+remove_box(axs[0, 1])
+axs[0, 1].set_xticks([])
+axs[0, 1].set_yticks([])
+axs[0, 1].set_title(f'{df_input.columns[175]} - 2023')
+axs[1, 0].plot(df_input.iloc[-22:-12, 123].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[1, 0])
+axs[1, 0].set_xticks([])
+axs[1, 0].set_yticks([])
+axs[1, 1].plot(df_input.iloc[-12:, 123].reset_index(drop=True), linewidth=2, color='black')
+axs[1, 1].plot(df_sf_2.iloc[:, 123].reset_index(drop=True), linewidth=5, color='purple')
+axs[1, 1].plot(df_preds_test_2.iloc[:12, 123].reset_index(drop=True), linewidth=2, color='grey')
+remove_box(axs[1, 1])
+axs[1, 1].set_xticks([])
+axs[1, 1].set_yticks([])
+axs[1, 1].set_title(f'{df_input.columns[123]} - 2023')
+axs[2, 0].plot(df_input.iloc[-34:-24, 190].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[2, 0])
+axs[2, 0].set_xticks([])
+axs[2, 0].set_yticks([])
+axs[2, 1].plot(df_input.iloc[-24:-12, 190].reset_index(drop=True), linewidth=2, color='black')
+axs[2, 1].plot(df_sf_1.iloc[:, 190].reset_index(drop=True), linewidth=5, color='purple')
+axs[2, 1].plot(df_preds_test_1.iloc[:12, 190].reset_index(drop=True), linewidth=2, color='grey')
+remove_box(axs[2, 1])
+axs[2, 1].set_xticks([])
+axs[2, 1].set_yticks([])
+axs[2, 1].set_title(f'{df_input.columns[190]} - 2022')
+plt.tight_layout()
 plt.show()
 
 
@@ -1389,35 +1522,105 @@ plt.show()
 # Best cases  
 # =============================================================================
 
-plt.plot(df_input.iloc[-34:-24,177].reset_index(drop=True),linewidth=2,color='black')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
+fig, axs = plt.subplots(3, 2, figsize=(15, 10))
+axs[0, 0].plot(df_input.iloc[-34:-24, 177].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[0, 0])
+axs[0, 0].set_xticks([])
+axs[0, 0].set_yticks([])
+axs[0, 1].plot(df_input.iloc[-24:-12, 177].reset_index(drop=True), linewidth=2, color='black')
+axs[0, 1].plot(df_sf_1.iloc[:, 177].reset_index(drop=True), linewidth=5, color='purple')
+axs[0, 1].plot(df_preds_test_1.iloc[:12, 177].reset_index(drop=True), linewidth=2, color='grey')
+remove_box(axs[0, 1])
+axs[0, 1].set_xticks([])
+axs[0, 1].set_yticks([])
+axs[0, 1].set_title(f'{df_input.columns[177]} - 2022')
+axs[1, 0].plot(df_input.iloc[-34:-24, 179].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[1, 0])
+axs[1, 0].set_xticks([])
+axs[1, 0].set_yticks([])
+axs[1, 1].plot(df_input.iloc[-24:-12, 179].reset_index(drop=True), linewidth=2, color='black')
+axs[1, 1].plot(df_sf_1.iloc[:, 179].reset_index(drop=True), linewidth=5, color='purple')
+axs[1, 1].plot(df_preds_test_1.iloc[:12, 179].reset_index(drop=True), linewidth=2, color='grey')
+remove_box(axs[1, 1])
+axs[1, 1].set_xticks([])
+axs[1, 1].set_yticks([])
+axs[1, 1].set_title(f'{df_input.columns[179]} - 2022')
+axs[2, 0].plot(df_input.iloc[-22:-12, 110].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[2, 0])
+axs[2, 0].set_xticks([])
+axs[2, 0].set_yticks([])
+axs[2, 1].plot(df_input.iloc[-12:, 110].reset_index(drop=True), linewidth=2, color='black')
+axs[2, 1].plot(df_sf_2.iloc[:, 110].reset_index(drop=True), linewidth=5, color='purple')
+axs[2, 1].plot(df_preds_test_2.iloc[:12, 110].reset_index(drop=True), linewidth=2, color='grey')
+remove_box(axs[2, 1])
+axs[2, 1].set_xticks([])
+axs[2, 1].set_yticks([])
+axs[2, 1].set_title(f'{df_input.columns[110]} - 2023')
+plt.tight_layout()
 plt.show()
 
-plt.plot(df_input.iloc[-24:-12,177].reset_index(drop=True),linewidth=2,color='black')
-plt.plot(df_sf_1.iloc[:,177].reset_index(drop=True),linewidth=5,color='purple')
-plt.plot(df_preds_test_1.iloc[:12,177].reset_index(drop=True),linewidth=2,color='grey')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.title(f'{df_input.columns[177]} - 2022')
-plt.show()
+# =============================================================================
+# Create the MSE of Better/Worse
+# =============================================================================
 
-plt.plot(df_input.iloc[-24:-12,179].reset_index(drop=True),linewidth=2,color='black')
-plt.plot(df_sf_1.iloc[:,179].reset_index(drop=True),linewidth=5,color='purple')
-plt.plot(df_preds_test_1.iloc[:12,179].reset_index(drop=True),linewidth=2,color='grey')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.title(f'{df_input.columns[179]} - 2022')
-plt.show()
+df_subr=df_var[(df_var.iloc[:,1]<0.27) & (df_var.iloc[:,5]>0.44)][4].mean()
+df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.4)][4].mean()
 
-plt.plot(df_input.iloc[-12:,110].reset_index(drop=True),linewidth=2,color='black')
-plt.plot(df_sf_2.iloc[:,110].reset_index(drop=True),linewidth=5,color='purple')
-plt.plot(df_preds_test_2.iloc[:12,110].reset_index(drop=True),linewidth=2,color='grey')
-plt.box(False)
-plt.xticks([])
-plt.yticks([])
-plt.title(f'{df_input.columns[110]} - 2023')
+df_input = df_input.fillna(0)
+h_train=10
+h=12
+mse_be=[]
+mse_wo=[]
+for nume in range(1,390):
+    for coun in range(len(df_input.columns)):
+        if not (df_input.iloc[nume:nume+h_train,coun]==0).all():
+            ser=df_input.iloc[nume:nume+h_train,coun]
+            ser=(ser-ser.min())/(ser.max()-ser.min())
+            diff = ser.diff()
+            if (diff.std()<0.25) & (ser.mean()>0.44):
+                try:
+                    df_copy=df_input.copy()
+                    df_copy.iloc[nume:nume+h_train,coun]=np.nan
+                    shape = Shape()
+                    shape.set_shape(df_input.iloc[nume:nume+h_train,coun]) 
+                    find = finder(df_copy.iloc[:-h,:],shape)
+                    find.find_patterns_lim(min_d=0.1,select=True,metric='dtw',dtw_sel=2,min_mat=3,d_increase=0.05)
+                    find.create_sce_predict(horizon=12)
+                    pred = find.val_sce
+                    pred = pred[pred.index == pred.index.max()].mean()
+                    true=df_input.iloc[nume:nume+12,coun]
+                    true = (true-df_input.iloc[nume:nume+h_train,coun].min())/(df_input.iloc[nume:nume+h_train,coun].max()-df_input.iloc[nume:nume+h_train,coun].min())
+                    mse_be.append(mean_squared_error(true,pred))
+                except:
+                    1
+
+err_sf_pr_n=[]
+for i in range(len(df_input.columns)):  
+    if (df_input.iloc[-34:-24,i]==0).all()==False:
+        true = df_input.iloc[-24:-24+horizon,i]
+        true = (true-df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
+        pred = df_sf_1.iloc[:,i]
+        pred = (pred-df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
+        err_sf_pr_n.append(mean_squared_error(true, pred))
+        if mean_squared_error(true, pred)>10000:
+            plt.plot(true.reset_index(drop=True))
+            plt.plot(pred)
+            plt.show()
+            print(i,1)
+for i in range(len(df_input.columns)):   
+    if (df_input.iloc[-22:-12,i]==0).all()==False:
+        true = df_input.iloc[-12:,i]
+        true = (true-df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
+        pred = df_sf_2.iloc[:,i]
+        pred = (pred-df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
+        err_sf_pr_n.append(mean_squared_error(true, pred))
+        if mean_squared_error(true, pred)>10000:
+            plt.plot(true.reset_index(drop=True))
+            plt.plot(pred)
+            plt.show()
+            print(i,2)
+
+plt.boxplot(mse_be,positions=[0],showfliers=False)
+plt.boxplot(err_sf_pr_n,positions=[1],showfliers=False)
+plt.xtick_labels([0,1],['Good','All'])
 plt.show()
