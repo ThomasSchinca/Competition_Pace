@@ -22,6 +22,8 @@ from scipy.stats import ttest_1samp
 import os
 import seaborn as sns
 import matplotlib.colors as mcolors
+from scipy.stats import linregress
+
 
 #plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
 #plt.rcParams.update(plot_params)
@@ -124,8 +126,8 @@ df_conf['Sao Tome and Principe']='Africa'
 # Add labels to input data
 df_input_s = df_input_t[df_input_t['country_id'].isin(cc_sort)]
 df_input = df_input_s.pivot(index="month_id",columns='country_id',values='ucdp_ged_sb_best_sum')
-df_input.index = pd.date_range('01/01/1989',periods=len(df_input),freq='M')
-df_input = df_input.iloc[:-1,:]
+df_input.index = pd.date_range('01/01/1990',periods=len(df_input),freq='M')
+df_input = df_input.iloc[:408,:]
 df_input.columns = country_list['name']
 
 # Save
@@ -750,8 +752,6 @@ df_sel = pd.concat([df_tot_res.iloc[:,0].reset_index(drop=True),pr_scale,pr_main
 df_sel = df_sel.dropna()
 df_sel.columns=['log MSE','Scale','Main_Pr','N_Matches']
 df_sel['Confidence']=df_sel.iloc[:,2]*np.log10(df_sel.iloc[:,3])
-#n_df_sel= df_sel[df_sel['log MSE'] <= -0.2]
-#p_df_sel= df_sel[df_sel['log MSE'] >= 0.2]
 n_df_sel= df_sel[df_sel['log MSE'] <= 0]
 p_df_sel= df_sel[df_sel['log MSE'] > 0]
 
@@ -1391,6 +1391,19 @@ plt.show()
 # =============================================================================
 # Variable ? 
 # =============================================================================
+
+def approximate_entropy(U, m, r):
+    def _phi(m):
+        N = len(U)
+        X = [U[i:i + m] for i in range(N - m + 1)]
+        C = []
+        for x in X:
+            C.append(sum([np.linalg.norm(np.array(x) - np.array(x2), ord=np.inf) <= r for x2 in X]) / (N - m + 1.0))
+        return np.sum(np.log(C)) / (N - m + 1.0)
+    return _phi(m) - _phi(m + 1)
+
+
+
 mean_d=[]
 std_d=[]
 per_d=[]
@@ -1398,6 +1411,7 @@ mean_m=[]
 std_m=[]
 per_m=[]
 sca=[]
+ap_ent=[]
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-34:-24,i]==0).all()==False:
         ser = (df_input.iloc[-34:-24,i] - df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
@@ -1409,6 +1423,7 @@ for i in range(len(df_input.columns)):
         std_m.append(ser.std())
         per_m.append((ser>ser.mean()).mean())
         sca.append(df_input.iloc[-34:-24,i].sum())
+        ap_ent.append(approximate_entropy(ser.tolist(),3,0.15))
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-22:-12,i]==0).all()==False:
         ser = (df_input.iloc[-22:-12,i] - df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
@@ -1420,8 +1435,9 @@ for i in range(len(df_input.columns)):
         std_m.append(ser.std())
         per_m.append((ser>ser.mean()).mean())
         sca.append(df_input.iloc[-22:-12,i].sum())
+        ap_ent.append(approximate_entropy(ser.tolist(),3,0.15))
         
-df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE'],mean_m,std_m,per_m]).T
+df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE'],mean_m,std_m,per_m,ap_ent]).T
 
 # mean_b = df_var[df_var.iloc[:,1]<0.22][4].mean()
 # mean_a = df_var[df_var.iloc[:,1]>0.22][4].mean()
@@ -1431,10 +1447,37 @@ df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE'],mean_m,std_m,per
 # plt.axhline(0,linestyle='--',color='black',alpha=0.2)
 # plt.show()
 
-# plt.scatter(df_var.iloc[:,0],df_var.iloc[:,1],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-0.5,vmax=0.5)
-# plt.hlines(0.37,0.3,0.6,color='red',linestyle='--')
-# plt.vlines(0.3,0.37,0.5,color='red',linestyle='--')
+# df_subr=df_var[(df_var.iloc[:,1]<0.35) & (df_var.iloc[:,8]>0.2)][4].mean()
+# norm = mcolors.Normalize(vmin=-1, vmax=1)
+# cmap = plt.get_cmap('RdBu')
+# color = cmap(norm(df_subr))
+# plt.figure(figsize=(15,10))
+# plt.scatter(df_var.iloc[:,1],df_var.iloc[:,8],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-2,vmax=2,s=np.log(df_var.iloc[:,3])*100)
+# plt.axhline(0.21,linestyle='--',color='black',alpha=0.2)
+# plt.axvline(0.345,linestyle='--',color='black',alpha=0.2)
+# plt.fill_betweenx(y=[0.21, 0.8], x1=0.345, color=color, alpha=0.3)
+# plt.xlim(0.1,0.55)
+# plt.ylim(-0.15,0.63)
 # plt.show()
+
+# import plotly.graph_objects as go
+# from plotly.offline import plot
+# fig = go.Figure(data=[go.Scatter3d(
+#     x=df_var.iloc[:, 1],
+#     y=df_var.iloc[:, 8],
+#     z=df_var.iloc[:, 0],
+#     mode='markers',
+#     marker=dict(
+#         size=np.log(df_var.iloc[:, 3])*5,
+#         color=df_var.iloc[:, 4],    # set color to the fourth column
+#         colorscale='RdBu',          # choose a colorscale
+#         cmin=-3,                    # set min color value
+#         cmax=3,                     # set max color value
+#         colorbar=dict(title='STD Diff')
+#     )
+# )])
+# plot(fig, auto_open=True)
+
 
 # mean_valu=[]
 # for i in pd.Series([*range(1,8)])/10:
@@ -1448,25 +1491,30 @@ df_subr=df_var[(df_var.iloc[:,1]<0.27) & (df_var.iloc[:,5]>0.44)][4].mean()
 norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
-plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1)
+plt.figure(figsize=(10,8))
+plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
 plt.axhline(0.44,linestyle='--',color='black',alpha=0.2)
 plt.axvline(0.27,linestyle='--',color='black',alpha=0.2)
 plt.fill_betweenx(y=[0.44, 0.8], x1=0.27, color=color, alpha=0.3)
 plt.xlim(0.1,0.55)
 plt.ylim(0.04,0.67)
+plt.xlabel('SD of Differentiate Pattern')
+plt.ylabel('Mean Value of Pattern')
 plt.show()
 
 df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.4)][4].mean()
 norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
-plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1)
-plt.scatter(df_var.iloc[:,6], df_var.iloc[:,5], c=df_var.iloc[:,4], cmap='RdBu', label='STD Diff', vmin=-1, vmax=1)
+plt.figure(figsize=(10,8))
+plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
 plt.axhline(0.4, linestyle='--', color='black', alpha=0.2)
 plt.axvline(0.37, linestyle='--', color='black', alpha=0.2)
 plt.fill_betweenx(y=[0, 0.4], x1=0.37, x2=0.5, color=color, alpha=0.3)
 plt.xlim(0.25,0.45)
 plt.ylim(0.05,0.67)
+plt.xlabel('SD Value of Pattern')
+plt.ylabel('Mean Value of Pattern')
 plt.show()
 
 
@@ -1481,17 +1529,17 @@ def remove_box(ax):
     ax.spines['bottom'].set_visible(False)
     
 fig, axs = plt.subplots(3, 2, figsize=(15, 10))
-axs[0, 0].plot(df_input.iloc[-22:-12, 175].reset_index(drop=True), linewidth=2, color='black')
+axs[0, 0].plot(df_input.iloc[-34:-24, 119].reset_index(drop=True), linewidth=2, color='black')
 remove_box(axs[0, 0])
 axs[0, 0].set_xticks([])
 axs[0, 0].set_yticks([])
-axs[0, 1].plot(df_input.iloc[-12:, 175].reset_index(drop=True), linewidth=2, color='black')
-axs[0, 1].plot(df_sf_2.iloc[:, 175].reset_index(drop=True), linewidth=5, color='purple')
-axs[0, 1].plot(df_preds_test_2.iloc[:12, 175].reset_index(drop=True), linewidth=2, color='grey')
+axs[0, 1].plot(df_input.iloc[-24:-12, 119].reset_index(drop=True), linewidth=2, color='black')
+axs[0, 1].plot(df_sf_1.iloc[:, 119].reset_index(drop=True), linewidth=5, color='purple')
+axs[0, 1].plot(df_preds_test_1.iloc[:12, 119].reset_index(drop=True), linewidth=2, color='grey')
 remove_box(axs[0, 1])
 axs[0, 1].set_xticks([])
 axs[0, 1].set_yticks([])
-axs[0, 1].set_title(f'{df_input.columns[175]} - 2023')
+axs[0, 1].set_title(f'{df_input.columns[119]} - 2023')
 axs[1, 0].plot(df_input.iloc[-22:-12, 123].reset_index(drop=True), linewidth=2, color='black')
 remove_box(axs[1, 0])
 axs[1, 0].set_xticks([])
@@ -1566,61 +1614,215 @@ plt.show()
 df_subr=df_var[(df_var.iloc[:,1]<0.27) & (df_var.iloc[:,5]>0.44)][4].mean()
 df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.4)][4].mean()
 
+### Exemples 
+# Good shape
 df_input = df_input.fillna(0)
 h_train=10
 h=12
-mse_be=[]
-mse_wo=[]
-for nume in range(1,390):
+
+fig, axs = plt.subplots(3, 3, figsize=(18,12))
+row=0
+col=0
+nume=30
+flag=True
+while flag==True:
+    nume=nume+12
     for coun in range(len(df_input.columns)):
         if not (df_input.iloc[nume:nume+h_train,coun]==0).all():
             ser=df_input.iloc[nume:nume+h_train,coun]
             ser=(ser-ser.min())/(ser.max()-ser.min())
             diff = ser.diff()
-            if (diff.std()<0.25) & (ser.mean()>0.44):
-                try:
-                    df_copy=df_input.copy()
-                    df_copy.iloc[nume:nume+h_train,coun]=np.nan
-                    shape = Shape()
-                    shape.set_shape(df_input.iloc[nume:nume+h_train,coun]) 
-                    find = finder(df_copy.iloc[:-h,:],shape)
-                    find.find_patterns_lim(min_d=0.1,select=True,metric='dtw',dtw_sel=2,min_mat=3,d_increase=0.05)
-                    find.create_sce_predict(horizon=12)
-                    pred = find.val_sce
-                    pred = pred[pred.index == pred.index.max()].mean()
-                    true=df_input.iloc[nume:nume+12,coun]
-                    true = (true-df_input.iloc[nume:nume+h_train,coun].min())/(df_input.iloc[nume:nume+h_train,coun].max()-df_input.iloc[nume:nume+h_train,coun].min())
-                    mse_be.append(mean_squared_error(true,pred))
-                except:
-                    1
+            if (abs(diff).std()<0.25) & (ser.mean()>0.44):
+                axs[row, col].plot(ser.reset_index(drop=True), linewidth=2, color='black')
+                remove_box(axs[row, col])
+                axs[row, col].set_xticks([])
+                axs[row, col].set_yticks([])
+                row=row+1
+                if row==3:
+                    col=col+1
+                    row=0
+                if col==3:
+                    flag=False
+plt.tight_layout()
+plt.show()
 
-err_sf_pr_n=[]
-for i in range(len(df_input.columns)):  
+
+# Bad shape
+fig, axs = plt.subplots(3, 3, figsize=(18,12))
+row=0
+col=0
+nume=1
+flag=True
+while flag==True:
+    nume=nume+12
+    for coun in range(len(df_input.columns)):
+        if not (df_input.iloc[nume:nume+h_train,coun]==0).all():
+            ser=df_input.iloc[nume:nume+h_train,coun]
+            ser=(ser-ser.min())/(ser.max()-ser.min())
+            diff = ser.diff()
+            if (ser.std()>0.37) & (ser.mean()<0.4):
+                axs[row, col].plot(ser.reset_index(drop=True), linewidth=2, color='black')
+                remove_box(axs[row, col])
+                axs[row, col].set_xticks([])
+                axs[row, col].set_yticks([])
+                row=row+1
+                if row==3:
+                    col=col+1
+                    row=0
+                if col==3:
+                    flag=False
+plt.tight_layout()
+plt.show()
+
+
+# mse_be_w=[]
+# mse_be_n=[]
+# df_match=pd.DataFrame()
+# for nume in range(1,380,5):
+#     for coun in range(len(df_input.columns)):
+#         if not (df_input.iloc[nume:nume+h_train,coun]==0).all():
+#             ser=df_input.iloc[nume:nume+h_train,coun]
+#             ser=(ser-ser.min())/(ser.max()-ser.min())
+#             diff = ser.diff()
+#             if (abs(diff).std()<0.25) & (ser.mean()>0.44):
+#                 df_copy=df_input.copy()
+#                 df_copy.iloc[nume:nume+h_train,coun]=np.nan
+#                 shape = Shape()
+#                 shape.set_shape(df_input.iloc[nume:nume+h_train,coun]) 
+#                 find = finder(df_copy.iloc[:-h,:],shape)
+#                 find.find_patterns_lim(min_d=0.1,select=True,metric='dtw',dtw_sel=2,min_mat=3,d_increase=0.05)
+#                 mat = [i[0].sum() for i in find.sequences]
+#                 mat = pd.cut( pd.Series(mat), bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)
+#                 find.create_sce_predict(horizon=12)
+#                 df_match=pd.concat([df_match,mat.value_counts()],axis=1)
+#                 pred = find.val_sce
+#                 pred = pred[pred.index == pred.index.max()].mean()
+#                 true=df_input.iloc[nume:nume+12,coun]
+#                 true = (true-df_input.iloc[nume:nume+h_train,coun].min())/(df_input.iloc[nume:nume+h_train,coun].max()-df_input.iloc[nume:nume+h_train,coun].min())
+#                 mse_be_w.append(df_input.iloc[nume:nume+12,coun].sum())
+#                 mse_be_n.append(mean_squared_error(true,pred))
+
+# err_sf_pr_n=[]
+# we_n=[]
+# for i in range(len(df_input.columns)):  
+#     if (df_input.iloc[-34:-24,i]==0).all()==False:
+#         true = df_input.iloc[-24:-24+horizon,i]
+#         true = (true-df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
+#         pred = df_sf_1.iloc[:,i]
+#         pred = (pred-df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
+#         err_sf_pr_n.append(mean_squared_error(true, pred))
+#         we_n.append(df_input.iloc[-24:-24+horizon,i].sum())
+
+# for i in range(len(df_input.columns)):   
+#     if (df_input.iloc[-22:-12,i]==0).all()==False:
+#         true = df_input.iloc[-12:,i]
+#         true = (true-df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
+#         pred = df_sf_2.iloc[:,i]
+#         pred = (pred-df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
+#         err_sf_pr_n.append(mean_squared_error(true, pred)*df_input.iloc[-12:,i].sum())
+#         we_n.append(df_input.iloc[-12:,i].sum())
+
+
+# err_sf_pr_n = [i+0.001 for i in err_sf_pr_n]
+# mse_be_n = [i+0.001 for i in mse_be_n]
+# we_n = [i+1 for i in we_n]
+# mse_be_w = [i+1 for i in mse_be_w]
+
+# df_norm = pd.DataFrame([err_sf_pr_n,we_n]).T
+# df_norm.to_csv('df_norm.csv')
+
+# df_be = pd.DataFrame([mse_be_n,mse_be_w]).T
+# df_be.to_csv('df_be.csv')
+
+df_be=pd.read_csv('df_be.csv',index_col=0)
+mse_be_w = df_be.iloc[:,1]
+mse_be_n = df_be.iloc[:,0]
+
+df_norm=pd.read_csv('df_norm.csv',index_col=0)
+we_n = df_norm.iloc[:,1]
+err_sf_pr_n = df_norm.iloc[:,0]
+
+plt.figure(figsize=(10,6))
+plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='black',alpha=0.6)
+plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='blue',marker='x',alpha=1)
+slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.log(err_sf_pr_n))
+plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='black', linestyle='--')
+slope2, intercept2, r_value2, p_value2, std_err2 = linregress(np.log(mse_be_w), np.log(mse_be_n))
+plt.xlabel('Sum of Fatalies in forecasted window (log)')
+plt.ylabel('Normalized MSE (log)')
+plt.show()
+
+
+df_match_w=pd.DataFrame()
+rea=[]
+err_spe=[]
+inde=[]
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+for i in range(len(df_input.columns)):   
     if (df_input.iloc[-34:-24,i]==0).all()==False:
-        true = df_input.iloc[-24:-24+horizon,i]
-        true = (true-df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
-        pred = df_sf_1.iloc[:,i]
-        pred = (pred-df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
-        err_sf_pr_n.append(mean_squared_error(true, pred))
-        if mean_squared_error(true, pred)>10000:
-            plt.plot(true.reset_index(drop=True))
-            plt.plot(pred)
-            plt.show()
-            print(i,1)
+        ser = (df_input.iloc[-34:-24,i] - df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
+        if (ser.std()>0.37) & (ser.mean()<0.4):
+            seq = dict_m[df_input.columns[i]]
+            mat = [i[0].sum() for i in seq]
+            mat = pd.cut( pd.Series(mat), bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)
+            df_match_w=pd.concat([df_match_w,mat.value_counts(normalize=True)],axis=1)
+            rea.append(df_input.iloc[-34:-24,i].sum())
+            err_s=mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i])
+            err_s_v=mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i])
+            err_spe.append(np.log((err_s_v+1)/(err_s+1)))
+            inde.append(df_input.columns[i]+' 2022')
+            #if np.log((err_s_v+1)/(err_s+1))<-4:
+            #     seq = dict_m[df_input.columns[i]]
+            #     seq = [i for i in seq if i[0].sum()>1000]
+            #     tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in seq]         
+            #     pred_seq=[]
+            #     for col,last_date,mi,ma,somme in tot_seq:
+            #         date=df_tot_m.iloc[:-24].index.get_loc(last_date)                 
+            #         if date+horizon<len(df_tot_m.iloc[:-24]):                               
+            #             seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)              
+            #             seq = (seq - mi) / (ma - mi)                             
+            #             pred_seq.append(seq.tolist())
+            #     tot_seq=pd.DataFrame(pred_seq)
+            #     linkage_matrix = linkage(tot_seq, method='ward')
+            #     clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+            #     tot_seq['Cluster'] = clusters
+            #     val_sce = tot_seq.groupby('Cluster').mean()
+            #     pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+            #     pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+            #     pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+            #     pred_ori=val_sce.loc[pr==pr.max(),:]
+            #     pred_ori=pred_ori.mean(axis=0)
+            #     preds=pred_ori*(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())+df_input.iloc[-34:-24,i].min()
+            #     preds[preds<0]=0
+            #     preds.index = df_input.iloc[-24:-12,i].index
+            #     sf_bad = df_sf_1.iloc[:,i].copy()
+            #     sf_bad.index = preds.index
+            #     plt.plot(preds,label='Fixed Pred',linewidth=5, color='purple')
+            #     plt.plot(sf_bad, label='SF',linewidth=5, color='grey')
+            #     plt.plot(df_input.iloc[-24:-12,i],linewidth=2, color='black')
+            #     plt.legend()
+            #     plt.show()
+                
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-22:-12,i]==0).all()==False:
-        true = df_input.iloc[-12:,i]
-        true = (true-df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
-        pred = df_sf_2.iloc[:,i]
-        pred = (pred-df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
-        err_sf_pr_n.append(mean_squared_error(true, pred))
-        if mean_squared_error(true, pred)>10000:
-            plt.plot(true.reset_index(drop=True))
-            plt.plot(pred)
-            plt.show()
-            print(i,2)
+        ser = (df_input.iloc[-22:-12,i] - df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
+        if (ser.std()>0.37) & (ser.mean()<0.4):
+            seq = dict_m[df_input.columns[i]]
+            mat = [i[0].sum() for i in seq]
+            mat = pd.cut( pd.Series(mat), bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)
+            df_match_w=pd.concat([df_match_w,mat.value_counts(normalize=True)],axis=1)
+            rea.append(df_input.iloc[-22:-12,i].sum())
+            err_s=mean_squared_error(df_input.iloc[-12:,i], df_sf_2.iloc[:,i])
+            err_s_v=mean_squared_error(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i])
+            err_spe.append(np.log((err_s_v+1)/(err_s+1)))
+            inde.append(df_input.columns[i]+' 2023')
 
-plt.boxplot(mse_be,positions=[0],showfliers=False)
-plt.boxplot(err_sf_pr_n,positions=[1],showfliers=False)
-plt.xtick_labels([0,1],['Good','All'])
-plt.show()
+df_match_w = df_match_w.T        
+df_match_w = pd.concat([df_match_w.reset_index(drop=True),pd.cut(pd.Series(rea), bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)],axis=1)
+df_match_w.index=inde
+df_match_w['MSE']=err_spe
+latex_table = df_match_w.sort_values('MSE').iloc[:5, :].to_latex(index=True, caption='Top 5 Entries by Log Ratio MSE', label='tab:top5_mse', float_format="%.2f")
+print(latex_table)
