@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import requests
 import pandas as pd 
 import numpy as np 
@@ -14,6 +16,8 @@ from dtaidistance import ed
 from scipy.stats import ttest_1samp
 import matplotlib.colors as mcolors
 from scipy.stats import linregress
+import matplotlib.lines as mlines
+from datetime import timedelta
 
 plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
 plt.rcParams.update(plot_params)
@@ -249,12 +253,12 @@ for coun in range(len(df_input_sub.columns)):
                 col = 'black'
             else:
                 col = 'lightgray'
-            plt.plot(i, d, color=col)
-        plt.axhline(y=horizon/3, c='black', ls='--', lw=0.8)
-        plt.xticks([])
+            #plt.plot(i, d, color=col)
+        #plt.axhline(y=horizon/3, c='black', ls='--', lw=0.8)
+        #plt.xticks([])
         #plt.yticks([])
         #plt.savefig(os.path.join(out_paths["analysis"],f"dendogram_{coun}_2022.jpeg"),dpi=400,bbox_inches="tight")
-        plt.show()
+        #plt.show()
         
         # Proportion of cases assigned to each cluster
         pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
@@ -465,12 +469,12 @@ for coun in range(len(df_input_sub.columns)):
                 col = 'black'
             else:
                 col = 'lightgray'
-            plt.plot(i, d, color=col)
-        plt.axhline(y=horizon/3, c='black', ls='--', lw=0.8)
-        plt.xticks([])
+            #plt.plot(i, d, color=col)
+        #plt.axhline(y=horizon/3, c='black', ls='--', lw=0.8)
+        #plt.xticks([])
         #plt.yticks([])
         #plt.savefig(os.path.join(out_paths["analysis"],f"dendogram_{coun}_2023.jpeg"),dpi=400,bbox_inches="tight")
-        plt.show()
+        #plt.show()
         
         # Proportion of cases assigned to each cluster        
         pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
@@ -574,7 +578,7 @@ for coun in range(len(df_input_sub.columns)):
         # Append predictions
         pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
         
-        # Plot 
+        # # Plot 
         plt.figure(figsize=(10, 6))
         plt.plot(preds, label='DTP model', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
@@ -832,7 +836,7 @@ xticks = ax.get_xticks()
 yticks = ax.get_yticks()
 ax.set_xticklabels([f'{tick:.0f}' if tick != 10000 else f'$\mathbf{{{int(tick):,}}}$' for tick in xticks],fontsize=20)
 ax.set_yticklabels([f'{tick:.1f}' if tick != 0.6000000000000001 else f'$\mathbf{{{tick:.1f}}}$' for tick in yticks],fontsize=20)
-plt.savefig(f"out/compound_select.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("compound_select.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 ##################
@@ -979,7 +983,7 @@ plt.text(1500000, 0.005, "Null", size=20, color='black')
 plt.text(3000000, 0.29, "t-1", size=20, color='black')
 ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
 ax.set_xticks([0, 1500000,3000000,4500000,6000000,7500000])
-plt.savefig("out/scatter1.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("scatter1.jpeg",dpi=400,bbox_inches="tight")
 
 # Difference explained
 means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
@@ -1062,14 +1066,17 @@ for i in range(len(df_input.columns)):
     print(df_input.columns[i]) 
 
 # Create a figure and a 2x2 grid of subplots
-fig, axs = plt.subplots(2, 2, figsize=(12, 8))
-
+fig, axs = plt.subplots(2, 2, figsize=(12,8))
 # Plot data in each subplot
 axs[0, 0].plot(df_sf_2.iloc[:,47], label='DTP model', linestyle="dashed",color='black',linewidth=2)
 axs[0, 0].plot(df_preds_test_2.iloc[:12,47].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
 axs[0, 0].plot(df_obs_2.iloc[:,47].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-axs[0, 0].set_xticks([],[])
-axs[0, 0].set_yticks([],[])
+axs[0, 0].set_xticks([])
+axs[0, 0].set_yticks([])
+axs[0, 0].spines['top'].set_visible(False)
+axs[0, 0].spines['left'].set_visible(False)
+axs[0, 0].spines['bottom'].set_visible(False)
+axs[0, 0].spines['right'].set_visible(False)
 axs[0, 0].set_title("Worse MSE",size=20)
 axs[0, 0].set_ylabel("Better DE",size=20)
 axs[0, 0].set_xlabel("Mali---2023",size=15)
@@ -1077,28 +1084,40 @@ axs[0, 0].set_xlabel("Mali---2023",size=15)
 axs[0, 1].plot(df_sf_1.iloc[:,117], linestyle="dashed",color='black',linewidth=2)
 axs[0, 1].plot(df_preds_test_1.iloc[:12,117].reset_index(drop=True),linestyle="dotted",color='black',linewidth=2)
 axs[0, 1].plot(df_obs_1.iloc[:,117].reset_index(drop=True),linestyle="solid",color="black",linewidth=2)
-axs[0, 1].set_xticks([],[])
-axs[0, 1].set_yticks([],[])
+axs[0, 1].set_xticks([])
+axs[0, 1].set_yticks([])
 axs[0, 1].set_title('Better MSE',size=20)
 axs[0, 1].set_xlabel("Saudi Arabia---2022",size=15)
+axs[0, 1].spines['top'].set_visible(False)
+axs[0, 1].spines['left'].set_visible(False)
+axs[0, 1].spines['bottom'].set_visible(False)
+axs[0, 1].spines['right'].set_visible(False)
 
 axs[1, 0].plot(df_sf_1.iloc[:,88], linestyle="dashed",color='black',linewidth=2)
 axs[1, 0].plot(df_preds_test_1.iloc[:12,88].reset_index(drop=True),linestyle="dotted",color='black',linewidth=2)
 axs[1, 0].plot(df_obs_1.iloc[:,88].reset_index(drop=True),linestyle="solid",color="black",linewidth=2)
-axs[1, 0].set_xticks([],[])
-axs[1, 0].set_yticks([],[])
+axs[1, 0].set_xticks([])
+axs[1, 0].set_yticks([])
+axs[1, 0].spines['top'].set_visible(False)
+axs[1, 0].spines['left'].set_visible(False)
+axs[1, 0].spines['bottom'].set_visible(False)
+axs[1, 0].spines['right'].set_visible(False)
 axs[1, 0].set_ylabel("Worse DE",size=20)
-axs[1, 0].set_title("Poland---2022",size=15)
+axs[1, 0].set_xlabel("Poland---2022",size=15)
 
 axs[1, 1].plot(df_sf_1.iloc[:,152], linestyle="dashed",color='black',linewidth=2)
 axs[1, 1].plot(df_preds_test_1.iloc[:12,152].reset_index(drop=True),linestyle="dotted",color='black',linewidth=2)
 axs[1, 1].plot(df_obs_1.iloc[:,152].reset_index(drop=True),linestyle="solid",color="black",linewidth=2)
-axs[1, 1].set_xticks([],[])
-axs[1, 1].set_yticks([],[])
-axs[1, 1].set_title("Congo, DRC---2022",size=15)
+axs[1, 1].set_xticks([])
+axs[1, 1].set_yticks([])
+axs[1, 1].spines['top'].set_visible(False)
+axs[1, 1].spines['left'].set_visible(False)
+axs[1, 1].spines['bottom'].set_visible(False)
+axs[1, 1].spines['right'].set_visible(False)
+axs[1, 1].set_xlabel("Congo, DRC---2022",size=15)
 
-fig.legend(loc='upper center', bbox_to_anchor=(0.5, 0.1), ncol=5,fontsize=12)
-
+#fig.legend(loc='upper center', bbox_to_anchor=(0.5, 0.1), ncol=5,fontsize=12)
+plt.tight_layout()
 plt.savefig("out/cross_tab.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
              
@@ -1392,7 +1411,7 @@ ap_ent=[]
 countries=[]
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-34:-24,i]==0).all()==False:
-        countries.append(f"{df_input.columns[i]}--2020")
+        countries.append(f"{df_input.columns[i]}--2022")
         ser = (df_input.iloc[-34:-24,i] - df_input.iloc[-34:-24,i].min())/(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())
         diff = ser.diff()
         mean_d.append(abs(diff).mean())
@@ -1405,7 +1424,7 @@ for i in range(len(df_input.columns)):
         ap_ent.append(approximate_entropy(ser.tolist(),3,0.15))
 for i in range(len(df_input.columns)):   
     if (df_input.iloc[-22:-12,i]==0).all()==False:
-        countries.append(f"{df_input.columns[i]}--2021")
+        countries.append(f"{df_input.columns[i]}--2023")
         ser = (df_input.iloc[-22:-12,i] - df_input.iloc[-22:-12,i].min())/(df_input.iloc[-22:-12,i].max()-df_input.iloc[-22:-12,i].min())
         diff = ser.diff()
         mean_d.append(abs(diff).mean())
@@ -1467,16 +1486,15 @@ df_var = pd.DataFrame([mean_d,std_d,per_d,sca,df_sel['log MSE'],mean_m,std_m,per
 # plt.axhline(0,linestyle='--',color='black',alpha=0.2)
 # plt.show()
 
-import matplotlib.lines as mlines
 df_subr=df_var[(df_var.iloc[:,1]<0.27) & (df_var.iloc[:,5]>0.44)][4].mean()
 norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
+plt.fill_betweenx(y=[0.44, 0.8], x1=0.27, color="white", alpha=1,edgecolor='blue',linestyle='--')
 plot=plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
 plt.axhline(0.44,linestyle='--',color='black',alpha=0.2)
 plt.axvline(0.27,linestyle='--',color='black',alpha=0.2)
-plt.fill_betweenx(y=[0.44, 0.8], x1=0.27, color="gray", alpha=0.3)
 plt.xlim(0.1,0.55)
 plt.ylim(0.04,0.67)
 plt.xlabel('Standard deviation of the differentiated input series')
@@ -1488,7 +1506,6 @@ size_ranges = [20, 80, 160, 240]
 legend_labels = ['0', '4', '8', '12']
 legend_handles = [mlines.Line2D([0], [0], marker='o', color='w', markerfacecolor='gray', markersize=np.sqrt(size), linestyle='', markeredgewidth=1) for size in size_ranges]
 ax.legend(legend_handles, legend_labels,loc='center left', bbox_to_anchor=(1, 0.9), title='Fatalities (log)', title_fontsize='15', fontsize='15',frameon=False)
-
 
 for i in range(len(df_var)):
     if df_var.iloc[i,1] < 0.26 and df_var.iloc[i,5] > 0.44 and df_var.iloc[i,4]>0.3:
@@ -1503,13 +1520,13 @@ plt.show()
 
 df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.4)][4].mean()
 norm = mcolors.Normalize(vmin=-1, vmax=1)
-cmap = plt.get_cmap('RdGy')
+cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdGy',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
+plt.fill_betweenx(y=[0, 0.4], x1=0.37, x2=0.5, color="white", alpha=1,edgecolor='red',linestyle='--')
+plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
 plt.axhline(0.4, linestyle='--', color='black', alpha=0.2)
 plt.axvline(0.37, linestyle='--', color='black', alpha=0.2)
-plt.fill_betweenx(y=[0, 0.4], x1=0.37, x2=0.5, color="gray", alpha=0.3)
 plt.xlim(0.25,0.45)
 plt.ylim(0.05,0.67)
 plt.xlabel('Standard deviation of the input series')
@@ -1521,7 +1538,6 @@ size_ranges = [20, 80, 160, 240]
 legend_labels = ['0', '4', '8', '12']
 legend_handles = [mlines.Line2D([0], [0], marker='o', color='w', markerfacecolor='gray', markersize=np.sqrt(size), linestyle='', markeredgewidth=1) for size in size_ranges]
 ax.legend(legend_handles, legend_labels,loc='center left', bbox_to_anchor=(1, 0.9), title='Fatalities (log)', title_fontsize='15', fontsize='15',frameon=False)
-
 for i in range(len(df_var)):
     if df_var.iloc[i,6] > 0.35 and df_var.iloc[i,5] < 0.4 and df_var.iloc[i,4]<-0.8:
         ax.annotate(countries[i], (df_var.iloc[i,6], df_var.iloc[i,5]-0.005),
@@ -1567,7 +1583,7 @@ remove_box(axs[0, 1])
 axs[0, 1].set_xticks([])
 axs[0, 1].set_yticks([])
 axs[0, 1].set_title(f'{df_input.columns[119]}---2022')
-axs[0, 0].set_title(f'{df_input.columns[119]}---2020')
+axs[0, 0].set_title(f'{df_input.columns[119]}---2021')
 
 axs[1, 0].plot(df_input.iloc[-22:-12, 123].reset_index(drop=True), linewidth=2, color='black')
 remove_box(axs[1, 0])
@@ -1579,7 +1595,7 @@ axs[1, 1].plot(df_preds_test_2.iloc[:12, 123].reset_index(drop=True), linewidth=
 remove_box(axs[1, 1])
 axs[1, 1].set_xticks([])
 axs[1, 1].set_yticks([])
-axs[1, 0].set_title(f'{df_input.columns[123]}---2021')
+axs[1, 0].set_title(f'{df_input.columns[123]}---2022')
 axs[1, 1].set_title(f'{df_input.columns[123]}---2023')
 
 axs[2, 0].plot(df_input.iloc[-34:-24, 190].reset_index(drop=True), linewidth=2, color='black')
@@ -1592,7 +1608,7 @@ axs[2, 1].plot(df_preds_test_1.iloc[:12, 190].reset_index(drop=True), linewidth=
 remove_box(axs[2, 1])
 axs[2, 1].set_xticks([])
 axs[2, 1].set_yticks([])
-axs[2, 0].set_title(f'{df_input.columns[190]}--2020')
+axs[2, 0].set_title(f'{df_input.columns[190]}--2021')
 axs[2, 1].set_title(f'{df_input.columns[190]}--2022')
 
 axs[3, 0].plot(df_input.iloc[-22:-12, 109].reset_index(drop=True), linewidth=2, color='black')
@@ -1605,13 +1621,13 @@ axs[3, 1].plot(df_preds_test_2.iloc[:12, 109].reset_index(drop=True), linewidth=
 remove_box(axs[3, 1])
 axs[3, 1].set_xticks([])
 axs[3, 1].set_yticks([])
-axs[3, 0].set_title(f'{df_input.columns[109]}---2021')
+axs[3, 0].set_title(f'{df_input.columns[109]}---2022')
 axs[3, 1].set_title(f'{df_input.columns[109]}---2023')
 plt.tight_layout()
 
 plt.savefig("out/cases_worst.jpeg",dpi=400,bbox_inches="tight")
 
-
+plt.show()
 
     
 #def remove_box(ax):
@@ -1677,7 +1693,7 @@ axs[0, 1].plot(df_preds_test_1.iloc[:12, 177].reset_index(drop=True), linewidth=
 remove_box(axs[0, 1])
 axs[0, 1].set_xticks([])
 axs[0, 1].set_yticks([])
-axs[0, 0].set_title(f'{df_input.columns[177]}--2020')
+axs[0, 0].set_title(f'{df_input.columns[177]}--2021')
 axs[0, 1].set_title(f'{df_input.columns[177]}--2022')
 
 axs[1, 0].plot(df_input.iloc[-34:-24, 179].reset_index(drop=True), linewidth=2, color='black')
@@ -1690,7 +1706,7 @@ axs[1, 1].plot(df_preds_test_1.iloc[:12, 179].reset_index(drop=True), linewidth=
 remove_box(axs[1, 1])
 axs[1, 1].set_xticks([])
 axs[1, 1].set_yticks([])
-axs[1, 0].set_title(f'{df_input.columns[179]}--2020')
+axs[1, 0].set_title(f'{df_input.columns[179]}--2021')
 axs[1, 1].set_title(f'{df_input.columns[179]}--2022')
 
 axs[2, 0].plot(df_input.iloc[-22:-12, 63].reset_index(drop=True), linewidth=2, color='black')
@@ -1703,7 +1719,7 @@ axs[2, 1].plot(df_preds_test_2.iloc[:12, 63].reset_index(drop=True), linewidth=2
 remove_box(axs[2, 1])
 axs[2, 1].set_xticks([])
 axs[2, 1].set_yticks([])
-axs[2, 0].set_title(f'{df_input.columns[63]}---2021')
+axs[2, 0].set_title(f'{df_input.columns[63]}---2022')
 axs[2, 1].set_title(f'{df_input.columns[63]}---2023')
 
 axs[3, 0].plot(df_input.iloc[-22:-12, 26].reset_index(drop=True), linewidth=2, color='black')
@@ -1716,12 +1732,13 @@ axs[3, 1].plot(df_preds_test_2.iloc[:12, 26].reset_index(drop=True), linewidth=2
 remove_box(axs[3, 1])
 axs[3, 1].set_xticks([])
 axs[3, 1].set_yticks([])
-axs[3, 0].set_title(f'{df_input.columns[26]}---2021')
+axs[3, 0].set_title(f'{df_input.columns[26]}---2022')
 axs[3, 1].set_title(f'{df_input.columns[26]}---2023')
 
 plt.tight_layout()
-
 plt.savefig("out/cases_best.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
 
 #fig, axs = plt.subplots(3, 2, figsize=(15, 10))
 #axs[0, 0].plot(df_input.iloc[-34:-24, 177].reset_index(drop=True), linewidth=2, color='black')
@@ -1795,7 +1812,7 @@ while flag==True:
                 remove_box(axs[row, col])
                 axs[row, col].set_xticks([])
                 axs[row, col].set_yticks([])
-                axs[row, col].set_title(f"{df_input.columns[coun]}; {str(df_input.iloc[nume:nume+h_train,coun].index[0])[:7]}---{str(df_input.iloc[nume:nume+h_train,coun].index[-1])[:7]}",size=12)
+                axs[row, col].set_title(f"{df_input.columns[coun]}; {str(df_input.iloc[nume:nume+h_train,coun].index[0]+timedelta(days=365))[:7]}---{str(df_input.iloc[nume:nume+h_train,coun].index[-1]+timedelta(days=365))[:7]}",size=12)
                 row=row+1
                 if row==6:
                     col=col+1
@@ -1826,7 +1843,7 @@ while flag==True:
                 axs[row, col].set_xticks([])
                 axs[row, col].set_yticks([])
                 axs[row, col].set_title(df_input.columns[coun])
-                axs[row, col].set_title(f"{df_input.columns[coun]}; {str(df_input.iloc[nume:nume+h_train,coun].index[0])[:7]}---{str(df_input.iloc[nume:nume+h_train,coun].index[-1])[:7]}",size=12)
+                axs[row, col].set_title(f"{df_input.columns[coun]}; {str(df_input.iloc[nume:nume+h_train,coun].index[0]+timedelta(days=365))[:7]}---{str(df_input.iloc[nume:nume+h_train,coun].index[-1]+timedelta(days=365))[:7]}",size=12)
 
                 row=row+1
                 if row==5:
@@ -1836,7 +1853,6 @@ while flag==True:
                     flag=False
 plt.tight_layout()
 plt.savefig("out/cases_worst_grid.jpeg",dpi=400,bbox_inches="tight")
-
 plt.show()
 
 
@@ -1908,13 +1924,14 @@ we_n = df_norm.iloc[:,1]
 err_sf_pr_n = df_norm.iloc[:,0]
 
 plt.figure(figsize=(10,6))
-plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='black',alpha=0.6)
-plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='blue',marker='x',alpha=1)
+plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='blue',alpha=0.6)
+plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='black',marker='x',alpha=1)
 slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.log(err_sf_pr_n))
-plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='black', linestyle='--')
+plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='blue', linestyle='--')
 slope2, intercept2, r_value2, p_value2, std_err2 = linregress(np.log(mse_be_w), np.log(mse_be_n))
 plt.xlabel('Sum of Fatalies in forecasted window (log)')
 plt.ylabel('Normalized MSE (log)')
+plt.savefig("out/best_reg.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
@@ -1937,38 +1954,7 @@ for i in range(len(df_input.columns)):
             err_s_v=mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i])
             err_spe.append(np.log((err_s_v+1)/(err_s+1)))
             inde.append(df_input.columns[i]+' 2022')
-            #if np.log((err_s_v+1)/(err_s+1))<-4:
-            #     seq = dict_m[df_input.columns[i]]
-            #     seq = [i for i in seq if i[0].sum()>1000]
-            #     tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in seq]         
-            #     pred_seq=[]
-            #     for col,last_date,mi,ma,somme in tot_seq:
-            #         date=df_tot_m.iloc[:-24].index.get_loc(last_date)                 
-            #         if date+horizon<len(df_tot_m.iloc[:-24]):                               
-            #             seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)              
-            #             seq = (seq - mi) / (ma - mi)                             
-            #             pred_seq.append(seq.tolist())
-            #     tot_seq=pd.DataFrame(pred_seq)
-            #     linkage_matrix = linkage(tot_seq, method='ward')
-            #     clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
-            #     tot_seq['Cluster'] = clusters
-            #     val_sce = tot_seq.groupby('Cluster').mean()
-            #     pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
-            #     pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
-            #     pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
-            #     pred_ori=val_sce.loc[pr==pr.max(),:]
-            #     pred_ori=pred_ori.mean(axis=0)
-            #     preds=pred_ori*(df_input.iloc[-34:-24,i].max()-df_input.iloc[-34:-24,i].min())+df_input.iloc[-34:-24,i].min()
-            #     preds[preds<0]=0
-            #     preds.index = df_input.iloc[-24:-12,i].index
-            #     sf_bad = df_sf_1.iloc[:,i].copy()
-            #     sf_bad.index = preds.index
-            #     plt.plot(preds,label='Fixed Pred',linewidth=5, color='purple')
-            #     plt.plot(sf_bad, label='SF',linewidth=5, color='grey')
-            #     plt.plot(df_input.iloc[-24:-12,i],linewidth=2, color='black')
-            #     plt.legend()
-            #     plt.show()
-                
+
 with open('test2.pkl', 'rb') as f:
     dict_m = pickle.load(f) 
 for i in range(len(df_input.columns)):   
