@@ -1930,7 +1930,7 @@ slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.l
 plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='gray', linestyle='--')
 slope2, intercept2, r_value2, p_value2, std_err2 = linregress(np.log(mse_be_w), np.log(mse_be_n))
 plt.xlabel('Sum of fatalies in forecasting window (log)')
-plt.ylabel('Normalized Mean-squared error (log)')
+plt.ylabel('Normalized MSE (log)')
 plt.savefig("out/best_reg.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
