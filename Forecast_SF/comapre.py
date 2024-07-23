@@ -1129,7 +1129,7 @@ def err(y_true,y_pred):
     return (np.log(y_true+1)-np.log(y_pred+1))**2
 
 # Calculate MSE
-dict_hor = {'DTP':[],'ViEWS':[],'Zeros':[],'t-1':[],'Compound':[]}
+dict_hor = {'DTP model':[],'ViEWS ensemble':[],'Null':[],'t-1':[],'Compound':[]}
 for h in range(12):
     err_sf_pr=[]
     err_views=[]
@@ -1165,22 +1165,22 @@ for h in range(12):
     err_t1 = pd.Series(err_t1)
     err_mix = pd.Series(err_mix)
     
-    dict_hor['DTP'].append([err_sf_pr.mean(),err_sf_pr.std()])
-    dict_hor['ViEWS'].append([err_views.mean(),err_views.std()])
-    dict_hor['Zeros'].append([err_zero.mean(),err_zero.std()])
+    dict_hor['DTP model'].append([err_sf_pr.mean(),err_sf_pr.std()])
+    dict_hor['ViEWS ensemble'].append([err_views.mean(),err_views.std()])
+    dict_hor['Null'].append([err_zero.mean(),err_zero.std()])
     dict_hor['t-1'].append([err_t1.mean(),err_t1.std()])
     dict_hor['Compound'].append([err_mix.mean(),err_mix.std()])
 
 test = pd.DataFrame(dict_hor)
 horizons = np.arange(len(test))+1
 plt.figure(figsize=(14, 8))
-for column,line in zip(test.columns[[0,1,3,4]],["dashed","dotted","solid","dashdot"]):
+for column,line in zip(test.columns[[0,1,2,3,4]],["black","gray","lightgray","lightsteelblue","royalblue"]):
     means = test[column].apply(lambda x: x[0])
     stds = test[column].apply(lambda x: x[1])
-    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(382), label=column, capsize=5,color="black",linewidth=2,linestyle=line)
+    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(382), label=column, capsize=5,color=line,linewidth=2,linestyle="solid")
 plt.xlabel('Prediction horizon',size=25)
 plt.ylabel('Mean-squared error (log)',size=25)
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=20)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=15)
 plt.savefig("out/horizon_mse.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
@@ -1265,21 +1265,21 @@ for mod in [err_sf_pr,err_views,err_zero,err_t1,err_mix]:
 mean_de=pd.concat(mean_de,axis=1)
 std_de =pd.concat(std_de,axis=1)
 
-mean_de.columns=['DTP','ViEWS','Zeros','t-1','Compound']
-std_de.columns = ['DTP','ViEWS','Zeros','t-1','Compound']
+mean_de.columns=['DTP model','ViEWS ensemble','Null','t-1','Compound']
+std_de.columns = ['DTP model','ViEWS ensemble','Null','t-1','Compound']
 
-mean_de.drop('Zeros', axis=1, inplace=True)
-std_de.drop('Zeros', axis=1, inplace=True)
+#mean_de.drop('Zeros', axis=1, inplace=True)
+#std_de.drop('Zeros', axis=1, inplace=True)
 
 horizons = np.arange(11)+1
 plt.figure(figsize=(14, 8))
-for column,line in zip(mean_de.columns,["dashed","dotted","solid","dashdot"]):
+for column,line in zip(mean_de.columns,["black","gray","lightgray","lightsteelblue","royalblue"]):
     means = mean_de[column]
     stds = std_de[column]
-    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(136), label=column, capsize=5,color="black",linewidth=2,linestyle=line)
+    plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(136), label=column, capsize=5,color=line,linewidth=2,linestyle="solid")
 plt.xlabel('Prediction horizon',size=25)
 plt.ylabel('Difference explained (DE)',size=25)
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=20)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=15)
 plt.savefig("out/horizon_de.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
@@ -1953,7 +1953,7 @@ for i in range(len(df_input.columns)):
             err_s=mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i])
             err_s_v=mean_squared_error(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i])
             err_spe.append(np.log((err_s_v+1)/(err_s+1)))
-            inde.append(df_input.columns[i]+' 2022')
+            inde.append(df_input.columns[i]+' 2021')
 
 with open('test2.pkl', 'rb') as f:
     dict_m = pickle.load(f) 
@@ -1969,7 +1969,7 @@ for i in range(len(df_input.columns)):
             err_s=mean_squared_error(df_input.iloc[-12:,i], df_sf_2.iloc[:,i])
             err_s_v=mean_squared_error(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i])
             err_spe.append(np.log((err_s_v+1)/(err_s+1)))
-            inde.append(df_input.columns[i]+' 2023')
+            inde.append(df_input.columns[i]+' 2022')
 
 df_match_w = df_match_w.T        
 df_match_w = pd.concat([df_match_w.reset_index(drop=True),pd.cut(pd.Series(rea), bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)],axis=1)
