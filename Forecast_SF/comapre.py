@@ -583,7 +583,7 @@ for coun in range(len(df_input_sub.columns)):
         plt.plot(preds, label='DTP model', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=12)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=15)
         plt.title(f"Predictions for {df_input_sub.columns[coun]}")
         plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"])
         plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
@@ -592,7 +592,7 @@ for coun in range(len(df_input_sub.columns)):
         plt.figure(figsize=(10, 6))
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=12)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=15)
         plt.title(f"Risk averse prediction for {df_input_sub.columns[coun]}")
         plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"])
         plt.savefig(f"out/risk_averse_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
@@ -1179,7 +1179,7 @@ for column,line in zip(test.columns[[0,1,3,4]],["dashed","dotted","solid","dashd
     stds = test[column].apply(lambda x: x[1])
     plt.errorbar(horizons, means, yerr=1.96*stds/np.sqrt(382), label=column, capsize=5,color="black",linewidth=2,linestyle=line)
 plt.xlabel('Prediction horizon',size=25)
-plt.ylabel('Mean-squared error of log-transformed values',size=25)
+plt.ylabel('Mean-squared error (log)',size=25)
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=20)
 plt.savefig("out/horizon_mse.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
@@ -1491,7 +1491,7 @@ norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-plt.fill_betweenx(y=[0.44, 0.8], x1=0.27, color="white", alpha=1,edgecolor='blue',linestyle='--')
+plt.fill_betweenx(y=[0.44, 0.8], x1=0.27, color="lightgray", alpha=1,linestyle='--')
 plot=plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
 plt.axhline(0.44,linestyle='--',color='black',alpha=0.2)
 plt.axvline(0.27,linestyle='--',color='black',alpha=0.2)
@@ -1523,7 +1523,7 @@ norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-plt.fill_betweenx(y=[0, 0.4], x1=0.37, x2=0.5, color="white", alpha=1,edgecolor='red',linestyle='--')
+plt.fill_betweenx(y=[0, 0.4], x1=0.37, x2=0.5, color="lightgray",linestyle='--')
 plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20)
 plt.axhline(0.4, linestyle='--', color='black', alpha=0.2)
 plt.axvline(0.37, linestyle='--', color='black', alpha=0.2)
@@ -1547,7 +1547,7 @@ for i in range(len(df_var)):
                     fontsize=9)
         
 for i in range(len(df_var)):
-    if df_var.iloc[i,6] > 0.35 and df_var.iloc[i,5] < 0.4 and df_var.iloc[i,4]<-0.3 and df_var.iloc[i,4]>-0.8:
+    if df_var.iloc[i,6] > 0.35 and df_var.iloc[i,5] < 0.4 and df_var.iloc[i,4]<-0.7 and df_var.iloc[i,4]>-0.8:
         ax.annotate(countries[i], (df_var.iloc[i,6], df_var.iloc[i,5]-0.03),
                     textcoords="offset points", 
                     xytext=(0,10), 
@@ -1924,13 +1924,13 @@ we_n = df_norm.iloc[:,1]
 err_sf_pr_n = df_norm.iloc[:,0]
 
 plt.figure(figsize=(10,6))
-plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='blue',alpha=0.6)
+plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='gray',alpha=0.6)
 plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='black',marker='x',alpha=1)
 slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.log(err_sf_pr_n))
-plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='blue', linestyle='--')
+plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='gray', linestyle='--')
 slope2, intercept2, r_value2, p_value2, std_err2 = linregress(np.log(mse_be_w), np.log(mse_be_n))
-plt.xlabel('Sum of Fatalies in forecasted window (log)')
-plt.ylabel('Normalized MSE (log)')
+plt.xlabel('Sum of fatalies in forecasting window (log)')
+plt.ylabel('Normalized Mean-squared error (log)')
 plt.savefig("out/best_reg.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
