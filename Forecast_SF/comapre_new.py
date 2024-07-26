@@ -1328,8 +1328,8 @@ plt.figure(figsize=(10, 6))
 for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
     x_values = []
     y_values = []
-    line_x=[0]
-    line_y=[0]
+    line_x=[]
+    line_y=[]
     for k in range(4):
         if k == 3:
             1
@@ -1344,11 +1344,10 @@ for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
     plt.plot(x_values, y_values, color=colors[i], linestyle='-', linewidth=0,marker='o',markersize=15,zorder=5)
     plt.plot(line_x, line_y, color=colors[i], linestyle='-', linewidth=2)
     for j in range(len(line_x) - 1):
-        if j>0:
-            dx = (line_x[j + 1] - line_x[j])/2
-            dy = (line_y[j + 1] - line_y[j])/2
-            plt.annotate('', xy=(line_x[j]+dx, line_y[j]+dy), xytext=(line_x[j], line_y[j]),
-                         arrowprops=dict(arrowstyle='->', color=colors[i]),size=20)
+        dx = (line_x[j + 1] - line_x[j])/2
+        dy = (line_y[j + 1] - line_y[j])/2
+        plt.annotate('', xy=(line_x[j]+dx, line_y[j]+dy), xytext=(line_x[j], line_y[j]),
+                     arrowprops=dict(arrowstyle='->', color=colors[i]),size=20)
 for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
     for k in range(5):
         if k == 4:
