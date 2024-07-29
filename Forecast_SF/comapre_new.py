@@ -18,12 +18,12 @@ import matplotlib.colors as mcolors
 from scipy.stats import linregress
 import matplotlib.lines as mlines
 from datetime import timedelta
-import dtreeviz
-from sklearn.tree import DecisionTreeRegressor
+#import dtreeviz
+from sklearn.tree import DecisionTreeRegressor,plot_tree
 from sklearn import tree
 
-# plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
-# plt.rcParams.update(plot_params)
+plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
+plt.rcParams.update(plot_params)
       
 ################
 ### Get Data ###
@@ -850,7 +850,7 @@ xticks = ax.get_xticks()
 yticks = ax.get_yticks()
 ax.set_xticklabels([f'{tick:.0f}' if tick != 10000 else f'$\mathbf{{{int(tick):,}}}$' for tick in xticks],fontsize=20)
 ax.set_yticklabels([f'{tick:.1f}' if tick != 0.6000000000000001 else f'$\mathbf{{{tick:.1f}}}$' for tick in yticks],fontsize=20)
-plt.savefig("compound_select.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("out/compound_select.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 ##################
@@ -991,13 +991,13 @@ plt.scatter(mean_mse["mean"][3],mean_de["mean"][3],color="black",s=150)
 plt.xlabel("Accuracy  (MSE reversed)")
 plt.ylabel("Difference explained  (DE)")
 ax.invert_xaxis()
-plt.text(1600000, 0.265, "Shape Finder", size=20, color='black')
+plt.text(1600000, 0.265, "DTP", size=20, color='black')
 plt.text(1570000, 0.231, "ViEWS", size=20, color='black')
 plt.text(1500000, 0.005, "Null", size=20, color='black')
-plt.text(3000000, 0.29, "t-1", size=20, color='black')
+plt.text(3050000, 0.29, "t-1", size=20, color='black')
 ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
 ax.set_xticks([0, 1500000,3000000,4500000,6000000,7500000])
-plt.savefig("scatter1.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("out/scatter1.jpeg",dpi=400,bbox_inches="tight")
 
 # Difference explained
 means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
@@ -1028,10 +1028,10 @@ plt.ylabel("Difference explained ratio (DE)")
 
 plt.xlim(0.5,-0.05)
 plt.ylim(-0.2,0.06)
-plt.text(0.29, 0.005, "t-1", size=20, color='dimgray')
-plt.text(0.036,-0.156, "Null", size=20, color='dimgray')
-plt.text(0.034, -0.03, "ViEWS", size=20, color='dimgray')
-plt.text(0.16, -0.002, 'Shape Finder', size=20,color="dimgray")
+plt.text(0.285, 0.004, "t-1", size=20, color='dimgray')
+plt.text(0.035,-0.158, "Null", size=20, color='dimgray')
+plt.text(0.026, -0.03, "ViEWS", size=20, color='dimgray')
+plt.text(0.09, -0.003, 'DTP', size=20,color="dimgray")
 plt.text(0.033, 0.008, 'Compound', size=20,color="black")
 ax.set_yticks([-0.2,-0.15,-0.1,-0.05,0,0.05])
 ax.set_xticks([0, 0.1,0.2,0.3,0.4,0.5])
@@ -1301,8 +1301,8 @@ std_de =pd.DataFrame(sd_tot_m).T
 mean_de.columns=['DTP','ViEWS','Zeros','t-1']
 std_de.columns = ['DTP','ViEWS','Zeros','t-1']
 
-mean_de.drop('Zeros', axis=1, inplace=True)
-std_de.drop('Zeros', axis=1, inplace=True)
+#mean_de.drop('Zeros', axis=1, inplace=True)
+#std_de.drop('Zeros', axis=1, inplace=True)
 
 horizons = np.arange(11)+1
 plt.figure(figsize=(14, 8))
@@ -1321,17 +1321,20 @@ plt.show()
 
 
 # Define colors and labels
-colors = ['grey', 'darkblue', 'black']
+colors = ['black', 'gray', 'royalblue',"lightskyblue"]
 letters=['A','B','C','D']
-name_m = mean_mse.iloc[:, [0, 1, 3]].columns.tolist()
-plt.figure(figsize=(10, 6))
-for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
+mean_mse.columns=['DTP','ViEWS','Null','t-1']
+mean_de.columns=['DTP','ViEWS','Null','t-1']
+
+name_m = mean_mse.iloc[:, [0, 1, 2,3]].columns.tolist()
+fig,ax = plt.subplots(figsize=(12,8))
+for i, col in enumerate(mean_mse.iloc[:, [0, 1, 2,3]].columns):
     x_values = []
     y_values = []
     line_x=[]
     line_y=[]
     for k in range(4):
-        if k == 3:
+        if k == 4:
             1
         else:
             x = mean_mse[col].iloc[(k * 4):((k + 1) * 4)].mean()
@@ -1348,7 +1351,7 @@ for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
         dy = (line_y[j + 1] - line_y[j])/2
         plt.annotate('', xy=(line_x[j]+dx, line_y[j]+dy), xytext=(line_x[j], line_y[j]),
                      arrowprops=dict(arrowstyle='->', color=colors[i]),size=20)
-for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
+for i, col in enumerate(mean_mse.iloc[:, [0, 1, 2,3]].columns):
     for k in range(5):
         if k == 4:
             plt.scatter(-1000, 0, 
@@ -1362,14 +1365,73 @@ for i, col in enumerate(mean_mse.iloc[:, [0, 1, 3]].columns):
                         color='white', 
                         marker='$'+letters[k]+'$', s=100,zorder=10)
 plt.plot(0, 0, marker='o',linewidth=0, label='Compound',color='lightgrey',markersize=8,zorder=10)
-plt.xlabel('Accuracy (MSE reversed)',fontsize=15)
-plt.ylabel('Difference explained ratio (DE)',fontsize=15)
-plt.title('Accuracy and MSE for Horizon sections',fontsize=20)
+plt.xlabel('Accuracy ratio (MSE reversed)')
+plt.ylabel('Difference explained ratio (DE)')
+#plt.title('Accuracy and MSE for Horizon sections',fontsize=20)
+plt.axhline(0, linestyle='--', alpha=0.4)
+plt.axvline(0, linestyle='--', alpha=0.4)
+plt.xlim(0.23, -0.008)
+plt.ylim(-0.07, 0.007)
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=15)
+plt.savefig("out/horizon_test.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+
+
+# Define colors and labels
+colors = ['black', 'gray', 'royalblue',"lightskyblue"]
+letters=['A','B','C','D']
+mean_mse.columns=['DTP','ViEWS','Null','t-1']
+mean_de.columns=['DTP','ViEWS','Null','t-1']
+
+name_m = mean_mse.iloc[:, [0, 1,3]].columns.tolist()
+fig,ax = plt.subplots(figsize=(12,8))
+for i, col in enumerate(mean_mse.iloc[:, [0, 1,3]].columns):
+    x_values = []
+    y_values = []
+    line_x=[]
+    line_y=[]
+    for k in range(4):
+        if k == 4:
+            1
+        else:
+            x = mean_mse[col].iloc[(k * 4):((k + 1) * 4)].mean()
+            y = mean_de.loc[k * 4:(k + 1) * 4, col].mean()
+            x_values.append(x)
+            y_values.append(y)
+            line_x.append(x)
+            line_y.append(y)
+
+    plt.plot(x_values, y_values, color=colors[i], linestyle='-', linewidth=0,marker='o',markersize=15,zorder=5)
+    plt.plot(line_x, line_y, color=colors[i], linestyle='-', linewidth=2)
+    for j in range(len(line_x) - 1):
+        dx = (line_x[j + 1] - line_x[j])/2
+        dy = (line_y[j + 1] - line_y[j])/2
+        plt.annotate('', xy=(line_x[j]+dx, line_y[j]+dy), xytext=(line_x[j], line_y[j]),
+                     arrowprops=dict(arrowstyle='->', color=colors[i]),size=20)
+for i, col in enumerate(mean_mse.iloc[:, [0, 1,3]].columns):
+    for k in range(5):
+        if k == 4:
+            plt.scatter(-1000, 0, 
+                        color=colors[i], 
+                        marker='o',
+                        label=name_m[i], s=50)
+        else:
+            x = mean_mse[col].iloc[(k * 4):((k + 1) * 4)].mean()
+            y = mean_de.loc[k * 4:(k + 1) * 4, col].mean()
+            plt.scatter(x, y, 
+                        color='white', 
+                        marker='$'+letters[k]+'$', s=100,zorder=10)
+plt.plot(0, 0, marker='o',linewidth=0, label='Compound',color='lightgrey',markersize=8,zorder=10)
+plt.xlabel('Accuracy ratio (MSE reversed)')
+plt.ylabel('Difference explained ratio (DE)')
+#plt.title('Accuracy and MSE for Horizon sections',fontsize=20)
 plt.axhline(0, linestyle='--', alpha=0.4)
 plt.axvline(0, linestyle='--', alpha=0.4)
 plt.xlim(0.052, -0.008)
 plt.ylim(-0.017, 0.007)
-plt.legend()
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=5,fontsize=15)
+plt.savefig("out/horizon_test_short.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 # =============================================================================
@@ -1410,8 +1472,8 @@ for k_fac in range(1,11):
 de_res=pd.DataFrame(de_res)
 de_res_std = pd.DataFrame(de_res_std)
 
-de_res.columns=test.columns
-de_res_std.columns=test.columns
+#de_res.columns=test.columns
+#de_res_std.columns=test.columns
 horizons = np.arange(len(de_res))+1
 
 plt.figure(figsize=(14, 8))
@@ -1532,9 +1594,44 @@ X = df_var.iloc[:, [1,5]]
 y = df_var.iloc[:, 4]
 model = DecisionTreeRegressor(random_state=42, max_depth=2,min_samples_split=10,min_samples_leaf=10)
 model.fit(X, y)
-viz_model = dtreeviz.model(model,X,y,feature_names=['Diff SD', 'Mean'],target_name='Log Ratio MSE')
-v = viz_model.view()  
-v.show()  
+#viz_model = dtreeviz.model(model,X,y,feature_names=['Diff SD', 'Mean'],target_name='Log Ratio MSE')
+#v = viz_model.view()  
+#v.show()  
+
+
+fig,ax=plt.subplots(figsize=(10,6))
+plot_tree(model, feature_names=[ 'Diff SD','Mean'], rounded=True,impurity=False) 
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'Mean <= 0.395\nsamples = 111\nvalue = -0.076' in text.get_text():
+        text.set_text('Mean $<=$ 0.395\nSamples = 111\nValue = -0.076')  # Replace with desired label
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'Mean <= 0.286\nsamples = 90\nvalue = -0.196' in text.get_text():
+        text.set_text('Mean $<=$ 0.286\nSamples = 90\nValue = -0.196')  # Replace with desired label
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 71\nvalue = -0.063' in text.get_text():
+        text.set_text('Samples = 71\nValue = -0.063')  # Replace with desired label
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 19\nvalue = -0.691' in text.get_text():
+        text.set_text('Samples = 19\nValue = -0.691')  # Replace with desired label                    
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'Diff SD <= 0.252\nsamples = 21\nvalue = 0.437' in text.get_text():
+        text.set_text('Diff SD $<=$ 0.252\nSamples = 21\nValue = 0.437')  # Replace with desired label                    
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 10\nvalue = 0.944' in text.get_text():
+        text.set_text('Samples = 10\nValue = 0.944') 
+        text.set_color('darkblue')
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 11\nvalue = -0.023' in text.get_text():
+        text.set_text('Samples = 11\nValue = -0.023')  #
+plt.savefig("out/decision_tree.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
 
 
 df_subr=df_var[(df_var.iloc[:,1]<0.2516) & (df_var.iloc[:,5]>0.3951)]
@@ -1542,9 +1639,9 @@ norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-#plt.fill_betweenx(y=[0.3951, 0.7], x1=0.2516, color="white", alpha=1,edgecolor='blue',linestyle='--')
-plt.axhline(0.3951,xmax=0.3316,linestyle='--',color='blue',alpha=1)
-plt.axvline(0.2516,ymin=0.5551,linestyle='--',color='blue',alpha=1)
+plt.fill_betweenx(y=[0.3951, 0.7], x1=0.2516, color="black", alpha=0.2,linestyle='--')
+plt.axhline(0.3951,xmax=0.3316,linestyle='--',color='black',alpha=0.2)
+plt.axvline(0.2516,ymin=0.5551,linestyle='--',color='black',alpha=0.2)
 plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20,alpha=0.2)
 plot=plt.scatter(df_subr.iloc[:,1],df_subr.iloc[:,5],c=df_subr.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_subr.iloc[:,3])*20)
 plt.axhline(0.3951,linestyle='--',color='black',alpha=0.2)
@@ -1567,7 +1664,7 @@ for i in range(len(df_var)):
                     xytext=(0,10), 
                     ha='center', 
                     fontsize=9)
-#plt.savefig("out/scatter_best.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("out/scatter_best.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
@@ -1583,25 +1680,29 @@ w.loc[63] = 3
 w.loc[22] = 2
 model_2 = DecisionTreeRegressor(random_state=42, max_depth=2,max_features=1)
 model_2.fit(X,y,w)
-viz_model = dtreeviz.model(model_2,X,y,feature_names=[ 'SD','Mean'])
-v = viz_model.view(colors={'highlight':'darkred','scatter_marker':'darkred'})  
-v.show()       
+#viz_model = dtreeviz.model(model_2,X,y,feature_names=[ 'SD','Mean'])
+#v = viz_model.view(colors={'highlight':'darkred','scatter_marker':'darkred'})  
+#v.show() 
+plt.figure(figsize=(20,10))
+plot_tree(model_2, feature_names=[ 'SD','Mean'], rounded=True,impurity=False)      
+plt.show()
 
 df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.43)]
 norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-plt.axhline(0.43,xmin=0.6, linestyle='--', color='darkred', alpha=1)
-plt.axvline(0.37,ymax=0.62, linestyle='--', color='darkred', alpha=1)
+plt.fill_betweenx(y=[0.43, 0.05], x1=0.37,x2=0.45, color="black", alpha=0.2,linestyle='--')
+plt.axhline(0.43,xmin=0.6, linestyle='--', color='gray', alpha=1)
+plt.axvline(0.37,ymax=0.62, linestyle='--', color='gray', alpha=1)
 plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20,alpha=0.2)
 plt.scatter(df_subr.iloc[:,6],df_subr.iloc[:,5],c=df_subr.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_subr.iloc[:,3])*20)
 plt.axhline(0.43, linestyle='--', color='black', alpha=0.2)
 plt.axvline(0.37, linestyle='--', color='black', alpha=0.2)
 plt.xlim(0.25,0.45)
 plt.ylim(0.05,0.67)
-plt.xlabel('Standard deviation of the input series')
-plt.ylabel('Mean of all data points in input series')
+plt.xlabel('Standard deviation of the input series (SD)')
+plt.ylabel('Mean of all data points in input series (Mean)')
 cax_cb = fig.add_axes([0.95, 0.23, 0.015, 0.4])  # [left, bottom, width, height]
 cbar = plt.colorbar(plot, ax=ax,cax=cax_cb,orientation='vertical')
 cbar.ax.set_title('Log-ratio', fontsize=15, pad=15)
@@ -1616,7 +1717,7 @@ for i in range(len(df_var)):
                     xytext=(0,10), 
                     ha='center', 
                     fontsize=9)
-#plt.savefig("out/scatter_worst.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("out/scatter_worst.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 # =============================================================================
@@ -2192,9 +2293,9 @@ plt.figure(figsize=(10,6))
 plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='blue',alpha=0.6)
 plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='black',marker='x',alpha=1)
 slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.log(err_sf_pr_n))
-plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='blue', linestyle='--')
+plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='gray', linestyle='--')
 slope2, intercept2, r_value2, p_value2, std_err2 = linregress(np.log(mse_be_w), np.log(mse_be_n))
-plt.xlabel('Sum of Fatalies in forecasted window (log)')
+plt.xlabel('Sum of fatalies in forecasting window (log)')
 plt.ylabel('Normalized MSE (log)')
 #plt.savefig("out/best_reg.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
