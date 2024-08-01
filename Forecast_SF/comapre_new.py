@@ -367,19 +367,21 @@ for coun in range(len(df_input_sub.columns)):
         plt.plot(preds, label='DTP model', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_1.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_1.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=15)
-        plt.title(f"Predictions for {df_input_sub.columns[coun]}")
-        plt.xticks([0,2,4,6,8,10],["2022-01","2022-03","2022-05","2022-07","2022-09","2022-11"])
-        #plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2022.jpeg",dpi=400,bbox_inches="tight")
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
+        plt.title(f"Predictions for {df_input_sub.columns[coun]}",size=30)
+        plt.xticks([0,2,4,6,8,10],["2022-01","2022-03","2022-05","2022-07","2022-09","2022-11"],size=25)
+        plt.yticks(size=25)
+        plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2022.jpeg",dpi=400,bbox_inches="tight")
         plt.show()    
         
         plt.figure(figsize=(10, 6))
         plt.plot(df_preds_test_1.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_1.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=15)
-        plt.title(f"Risk averse prediction for {df_input_sub.columns[coun]}")
-        plt.xticks([0,2,4,6,8,10],["2022-01","2022-03","2022-05","2022-07","2022-09","2022-11"])
-        #plt.savefig(f"out/risk_averse_{df_input_sub.columns[coun]}_2022.jpeg",dpi=400,bbox_inches="tight")
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
+        plt.title(f"Risk averse prediction for {df_input_sub.columns[coun]}",size=30)
+        plt.xticks([0,2,4,6,8,10],["2022-01","2022-03","2022-05","2022-07","2022-09","2022-11"],size=25)
+        plt.yticks(size=25)
+        plt.savefig(f"out/risk_averse_{df_input_sub.columns[coun]}_2022.jpeg",dpi=400,bbox_inches="tight")
         plt.show()        
     
     else:
@@ -392,10 +394,11 @@ for coun in range(len(df_input_sub.columns)):
         plt.plot(pd.Series(np.zeros((horizon,))), label='DTP model', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_1.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_1.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=15)
-        plt.title(f"Predictions for {df_input_sub.columns[coun]}")
-        plt.xticks([0,2,4,6,8,10],["2022-01","2022-03","2022-05","2022-07","2022-09","2022-11"])
-        #plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2022.jpeg",dpi=400,bbox_inches="tight")
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
+        plt.title(f"Predictions for {df_input_sub.columns[coun]}",size=30)
+        plt.xticks([0,2,4,6,8,10],["2022-01","2022-03","2022-05","2022-07","2022-09","2022-11"],size=25)
+        plt.yticks(size=25)
+        plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2022.jpeg",dpi=400,bbox_inches="tight")
         plt.show()  
         
 # Save        
@@ -588,19 +591,21 @@ for coun in range(len(df_input_sub.columns)):
         plt.plot(preds, label='DTP model', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=12)
-        plt.title(f"Predictions for {df_input_sub.columns[coun]}")
-        plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"])
-        #plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
+        plt.title(f"Predictions for {df_input_sub.columns[coun]}",size=30)
+        plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"],size=25)
+        plt.yticks(size=25)
+        plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
         plt.show()    
         
         plt.figure(figsize=(10, 6))
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=12)
-        plt.title(f"Risk averse prediction for {df_input_sub.columns[coun]}")
-        plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"])
-        #plt.savefig(f"out/risk_averse_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
+        plt.title(f"Risk averse prediction for {df_input_sub.columns[coun]}",size=30)
+        plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"],size=25)
+        plt.yticks(size=25)
+        plt.savefig(f"out/risk_averse_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
         plt.show()   
     
     else:
@@ -613,10 +618,11 @@ for coun in range(len(df_input_sub.columns)):
         plt.plot(pd.Series(np.zeros((horizon,))), label='DTP model', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=12)
-        plt.title(f"Predictions for {df_input_sub.columns[coun]}")
-        plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"])
-        #plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
+        plt.title(f"Predictions for {df_input_sub.columns[coun]}",size=30)
+        plt.xticks([0,2,4,6,8,10],["2023-01","2023-03","2023-05","2023-07","2023-09","2023-11"],size=25)
+        plt.yticks(size=25)
+        plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
         plt.show()  
      
 # Save
@@ -1599,7 +1605,7 @@ model.fit(X, y)
 #v.show()  
 
 
-fig,ax=plt.subplots(figsize=(10,6))
+fig,ax=plt.subplots(figsize=(9,6))
 plot_tree(model, feature_names=[ 'Diff SD','Mean'], rounded=True,impurity=False) 
 for text in ax.texts:
     # Custom logic to change node labels
@@ -1630,7 +1636,7 @@ for text in ax.texts:
     # Custom logic to change node labels
     if 'samples = 11\nvalue = -0.023' in text.get_text():
         text.set_text('Samples = 11\nValue = -0.023')  #
-plt.savefig("out/decision_tree.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("out/decision_tree_best.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
@@ -1639,7 +1645,7 @@ norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-plt.fill_betweenx(y=[0.3951, 0.7], x1=0.2516, color="black", alpha=0.2,linestyle='--')
+plt.fill_betweenx(y=[0.3951, 0.7], x1=0.2516, color="gray", alpha=0.2,linestyle='--')
 plt.axhline(0.3951,xmax=0.3316,linestyle='--',color='black',alpha=0.2)
 plt.axvline(0.2516,ymin=0.5551,linestyle='--',color='black',alpha=0.2)
 plt.scatter(df_var.iloc[:,1],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20,alpha=0.2)
@@ -1683,8 +1689,40 @@ model_2.fit(X,y,w)
 #viz_model = dtreeviz.model(model_2,X,y,feature_names=[ 'SD','Mean'])
 #v = viz_model.view(colors={'highlight':'darkred','scatter_marker':'darkred'})  
 #v.show() 
-plt.figure(figsize=(20,10))
-plot_tree(model_2, feature_names=[ 'SD','Mean'], rounded=True,impurity=False)      
+
+
+fig,ax=plt.subplots(figsize=(9,6))
+plot_tree(model_2, feature_names=[ 'SD','Mean'], rounded=True,impurity=False)  
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'SD <= 0.375\nsamples = 111\nvalue = -0.102' in text.get_text():
+        text.set_text('SD $<=$ 0.375\nSamples = 111\nValue = -0.102')
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'SD <= 0.29\nsamples = 96\nvalue = 0.035' in text.get_text():
+        text.set_text('SD $<=$ 0.29\nSamples = 96\nValue = 0.035')
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 5\nvalue = 1.09' in text.get_text():
+        text.set_text('Samples = 5\nValue = 1.09')
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 91\nvalue = -0.023' in text.get_text():
+        text.set_text('Samples = 91\nValue = -0.023')
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'Mean <= 0.436\nsamples = 15\nvalue = -0.835' in text.get_text():
+        text.set_text('Mean $<=$ 0.436\nSamples = 15\nValue = -0.835')        
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 14\nvalue = -1.139' in text.get_text():
+        text.set_text('Samples = 14\nValue = -1.139')    
+        text.set_color('darkred')
+for text in ax.texts:
+    # Custom logic to change node labels
+    if 'samples = 1\nvalue = 0.682' in text.get_text():
+        text.set_text('Samples = 1\nValue = 0.682')                         
+plt.savefig("out/decision_tree_worst.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 df_subr=df_var[(df_var.iloc[:,6]>0.37) & (df_var.iloc[:,5]<0.43)]
@@ -1692,7 +1730,7 @@ norm = mcolors.Normalize(vmin=-1, vmax=1)
 cmap = plt.get_cmap('RdBu')
 color = cmap(norm(df_subr))
 fig,ax = plt.subplots(figsize=(12,8))
-plt.fill_betweenx(y=[0.43, 0.05], x1=0.37,x2=0.45, color="black", alpha=0.2,linestyle='--')
+plt.fill_betweenx(y=[0.43, 0.05], x1=0.37,x2=0.45, color="gray", alpha=0.2,linestyle='--')
 plt.axhline(0.43,xmin=0.6, linestyle='--', color='gray', alpha=1)
 plt.axvline(0.37,ymax=0.62, linestyle='--', color='gray', alpha=1)
 plt.scatter(df_var.iloc[:,6],df_var.iloc[:,5],c=df_var.iloc[:,4],cmap='RdBu',label='STD Diff',vmin=-1,vmax=1,s=np.log(df_var.iloc[:,3])*20,alpha=0.2)
@@ -1733,7 +1771,7 @@ def remove_box(ax):
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
-    
+
 fig, axs = plt.subplots(4, 2, figsize=(13, 12))
 axs[0, 0].plot(df_input.iloc[-34:-24, 119].reset_index(drop=True), linewidth=2, color='black')
 remove_box(axs[0, 0])
@@ -1789,6 +1827,67 @@ axs[3, 1].set_title(f'{df_input.columns[109]}---2023')
 plt.tight_layout()
 
 plt.savefig("out/cases_worst.jpeg",dpi=400,bbox_inches="tight")
+
+plt.show()
+
+        
+fig, axs = plt.subplots(4, 1, figsize=(10, 13))
+axs[0].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-34:-24, 119].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[0])
+axs[0].set_xticks([])
+axs[0].set_yticks([])
+ax2 = axs[0].twinx()
+ax2.set_yticks([])
+remove_box(ax2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-24:-12, 119].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_1.iloc[:, 119].reset_index(drop=True),linestyle="dashed",color='black',linewidth=2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_1.iloc[:12, 119].reset_index(drop=True), linestyle="dotted",color='black',linewidth=2)
+axs[0].set_title(f'{df_input.columns[119]} 2021---2022')
+axs[0].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+axs[1].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-22:-12, 123].reset_index(drop=True), linewidth=2, color='black')   
+remove_box(axs[1])
+axs[1].set_xticks([])
+axs[1].set_yticks([])
+ax2 = axs[1].twinx()
+ax2.set_yticks([])
+remove_box(ax2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-12:, 123].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_2.iloc[:, 123].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_2.iloc[:12, 123].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+axs[1].set_title(f'{df_input.columns[123]} 2022---2023')
+axs[1].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+axs[2].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-34:-24, 190].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[2])
+axs[2].set_xticks([])
+axs[2].set_yticks([])
+ax2 = axs[2].twinx()
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-24:-12, 190].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_1.iloc[:, 190].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_1.iloc[:12, 190].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+ax2.set_yticks([])
+remove_box(ax2)
+axs[2].set_title(f'{df_input.columns[190]} 2021---2022')
+axs[2].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+axs[3].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-22:-12, 109].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[3])
+axs[3].set_xticks([])
+axs[3].set_yticks([])
+ax2 = axs[3].twinx()
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-12:, 109].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_2.iloc[:, 109].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_2.iloc[:12, 109].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+ax2.set_yticks([])
+remove_box(ax2)
+axs[3].set_title(f'{df_input.columns[109]} 2022---2023')
+axs[3].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+plt.tight_layout()
+
+plt.savefig("out/cases_worst2.jpeg",dpi=400,bbox_inches="tight")
+
 
 plt.show()
 
@@ -1900,6 +1999,67 @@ axs[3, 1].set_title(f'{df_input.columns[26]}---2023')
 
 plt.tight_layout()
 plt.savefig("out/cases_best.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+
+
+
+
+fig, axs = plt.subplots(4, 1, figsize=(10, 13))
+axs[0].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-34:-24, 177].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[0])
+axs[0].set_xticks([])
+axs[0].set_yticks([])
+ax2 = axs[0].twinx()
+ax2.set_yticks([])
+remove_box(ax2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-24:-12, 177].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_1.iloc[:, 177].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_1.iloc[:12, 177].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+axs[0].set_title(f'{df_input.columns[177]} 2021---2022')
+axs[0].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+axs[1].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-34:-24, 179].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[1])
+axs[1].set_xticks([])
+axs[1].set_yticks([])
+ax2 = axs[1].twinx()
+ax2.set_yticks([])
+remove_box(ax2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-24:-12, 179].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_1.iloc[:, 179].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_1.iloc[:12, 179].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+axs[1].set_title(f'{df_input.columns[179]} 2021---2022')
+axs[1].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+axs[2].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-22:-12, 63].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[2])
+axs[2].set_xticks([])
+axs[2].set_yticks([])
+ax2 = axs[2].twinx()
+ax2.set_yticks([])
+remove_box(ax2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-12:, 63].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_2.iloc[:, 63].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_2.iloc[:12, 63].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+axs[2].set_title(f'{df_input.columns[63]} 2022---2023')
+axs[2].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+axs[3].plot([0,1,2,3,4,5,6,7,8,9],df_input.iloc[-22:-12, 26].reset_index(drop=True), linewidth=2, color='black')
+remove_box(axs[3])
+axs[3].set_xticks([])
+axs[3].set_yticks([])
+ax2 = axs[3].twinx()
+ax2.set_yticks([])
+remove_box(ax2)
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_input.iloc[-12:, 26].reset_index(drop=True), linewidth=2, color='black')
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_sf_2.iloc[:, 26].reset_index(drop=True), linewidth=2, color='black',linestyle="dashed")
+ax2.plot([9,10,11,12,13,14,15,16,17,18,19,22],df_preds_test_2.iloc[:12, 26].reset_index(drop=True), linewidth=2, color='black',linestyle="dotted")
+axs[3].set_title(f'{df_input.columns[26]} 2022---2023')
+axs[3].axvline(x=9, color='black', linestyle='--', linewidth=1)
+
+plt.tight_layout()
+plt.savefig("out/cases_best2.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
