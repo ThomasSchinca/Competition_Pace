@@ -837,8 +837,8 @@ n_df_sel= df_sel[df_sel['log MSE'] <= 0]
 p_df_sel= df_sel[df_sel['log MSE'] > 0]
 
 plt.figure(figsize=(14, 10))
-plt.scatter(n_df_sel.iloc[:,1], n_df_sel.iloc[:,2] , color='darkgrey', s=70)
-plt.scatter(p_df_sel.iloc[:,1], p_df_sel.iloc[:,2], color='black', s=70)
+plt.scatter(n_df_sel.iloc[:,1], n_df_sel.iloc[:,2]* np.log10(n_df_sel.iloc[:,3]), color='darkgrey', s=70)
+plt.scatter(p_df_sel.iloc[:,1], p_df_sel.iloc[:,2]* np.log10(p_df_sel.iloc[:,3]), color='black', s=70)
 plt.xscale('log')
 plt.xlabel('Severity, Number of fatalities',size=20)
 plt.ylabel('Confidence, p*log(N)',size=20)
