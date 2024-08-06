@@ -2253,17 +2253,17 @@ df_norm=pd.read_csv('df_norm.csv',index_col=0)
 we_n = df_norm.iloc[:,1]
 err_sf_pr_n = df_norm.iloc[:,0]
 
-plt.figure(figsize=(10,6))
-plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='blue',alpha=0.6)
+plt.figure(figsize=(14, 10))
+plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='gray',alpha=0.6)
 plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='black',marker='x',alpha=1)
 # coeffs1 = np.polyfit(np.log(we_n), np.log(err_sf_pr_n), 2)
 # poly1 = np.polyval(coeffs1, np.log(we_n))
 # plt.plot(np.log(we_n), poly1, color='blue', linestyle='--', label='Poly fit 1')
 slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.log(err_sf_pr_n))
-plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='blue', linestyle='--')
-plt.xlabel('Sum of Fatalies in forecasted window (log)')
+plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='gray', linestyle='--')
+plt.xlabel('Sum of fatalies in forecasting window (log)')
 plt.ylabel('Normalized MSE (log)')
-#plt.savefig("out/best_reg.jpeg",dpi=400,bbox_inches="tight")
+plt.savefig("out/best_reg.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 df_match_w=pd.DataFrame()
@@ -2371,14 +2371,15 @@ mse_be_w = [i+1 for i in mse_be_w]
 
 
 plt.figure(figsize=(10,6))
-plt.scatter(np.log(we_n),err_sf_pr_n,color='blue',alpha=0.6)
+plt.scatter(np.log(we_n),err_sf_pr_n,color='gray',alpha=0.6)
 plt.scatter(np.log(mse_be_w),mse_be_n,color='black',marker='x',alpha=1)
 slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), err_sf_pr_n)
-plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='blue', linestyle='--')
+plt.plot(np.log(we_n), intercept1 + slope1 * np.log(we_n), color='gray', linestyle='--')
 slope2, intercept2, r_value2, p_value2, std_err2 = linregress(np.log(mse_be_w), mse_be_n)
 plt.plot(np.log(mse_be_w), intercept2 + slope2 * np.log(mse_be_w), color='black', linestyle='--')
-plt.xlabel('Sum of Fatalies in forecasted window (log)')
+plt.xlabel('Sum of fatalies in forecasted window (log)')
 plt.ylabel('Diff Explained (log)')
+
 plt.show()
 
 
@@ -2455,7 +2456,7 @@ df_norm=pd.read_csv('df_norm_wo.csv',index_col=0)
 we_n = df_norm.iloc[:,1]
 err_sf_pr_n = df_norm.iloc[:,0]
 
-plt.figure(figsize=(10,6))
+plt.figure(figsize=(14, 10))
 plt.scatter(np.log(we_n),np.log(err_sf_pr_n),color='blue',alpha=0.6)
 plt.scatter(np.log(mse_be_w),np.log(mse_be_n),color='black',marker='x',alpha=1)
 slope1, intercept1, r_value1, p_value1, std_err1 = linregress(np.log(we_n), np.log(err_sf_pr_n))
