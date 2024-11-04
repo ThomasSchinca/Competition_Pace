@@ -802,6 +802,10 @@ ttest_1samp(df_sel.iloc[:,0],0)[1]
 df_try=pd.concat([df_sel_s.iloc[:,0],pd.Series([0]*(111-len(df_sel_s)))])
 ttest_1samp(df_try,0)
 
+# Proportions 
+len(df_keep_1)/len(df_sel)
+(len(df_sel)-len(df_keep_1))/len(df_sel)
+
 # bins = [-99,-5,-4,-3,-2, -1.5,-1,-0.75,-0.5,-0.25, 0,0.25,0.5, 0.75,1, 1.5,2,3,4,5,99]
 # fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(8, 8))
 # ax1.hist(df_sel['log MSE'], bins=bins, edgecolor='black')
