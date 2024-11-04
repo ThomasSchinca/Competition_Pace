@@ -16,7 +16,10 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 from scipy import stats
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+from cycler import cycler
 
+plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
+plt.rcParams.update(plot_params)
 
 def diff_explained(df_input,pred,k=5,horizon=12):
     d_nn=[]
@@ -269,7 +272,92 @@ for n_k,k_min in enumerate([1,3,5]):
 # plt.grid(True, linestyle='--', alpha=0.6)
 # plt.show()
 
+# =============================================================================
+# Different cut-off for clusterings
+# =============================================================================
 
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f)
+
+horizon=12
+h_train=10
+
+for cut in [2,4,5]:
+    pred_tot_min=[]
+    pred_tot_pr=[]
+    df_input_sub=df_input.iloc[:-24]
+    for coun in range(len(df_input_sub.columns)):
+        if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+            inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]            
+            l_find=dict_m[df_input.columns[coun]]          
+            tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+            pred_seq=[]
+            for col,last_date,mi,ma,somme in tot_seq:
+                date=df_tot_m.iloc[:-24].index.get_loc(last_date)            
+                if date+horizon<len(df_tot_m.iloc[:-24]):                              
+                    seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)               
+                    seq = (seq - mi) / (ma - mi)                                
+                    pred_seq.append(seq.tolist())        
+            tot_seq=pd.DataFrame(pred_seq)
+            linkage_matrix = linkage(tot_seq, method='ward')
+            clusters = fcluster(linkage_matrix, horizon/cut, criterion='distance')
+            tot_seq['Cluster'] = clusters
+            val_sce = tot_seq.groupby('Cluster').mean()   
+            pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+            pred_ori=val_sce.loc[pr==pr.max(),:]
+            pred_ori=pred_ori.mean(axis=0)
+            preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+            pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        else:
+            pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+            pred_tot_pr.append(pd.Series(np.zeros((horizon,))))
+            
+    df_sf_1_sub = pd.concat(pred_tot_pr,axis=1)
+    df_sf_1_sub.columns=country_list['name']
+    df_sf_1_tot.append(df_sf_1_sub)           
+            
+            
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+
+horizon=12
+for cut in [2,4,5]:
+    df_input_sub=df_input.iloc[:-12]
+    pred_tot_min=[]
+    pred_tot_pr=[]
+
+    for coun in range(len(df_input_sub.columns)):
+        if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+            inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+            l_find=dict_m[df_input.columns[coun]]
+            tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]           
+            pred_seq=[]                     
+            for col,last_date,mi,ma,somme in tot_seq:
+                date=df_tot_m.iloc[:-12].index.get_loc(last_date)       
+                if date+horizon<len(df_tot_m.iloc[:-12]):               
+                    seq=df_tot_m.iloc[:-12].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-12].columns.get_loc(col)].reset_index(drop=True)
+                    seq = (seq - mi) / (ma - mi)              
+                    pred_seq.append(seq.tolist())                
+            tot_seq=pd.DataFrame(pred_seq)       
+            linkage_matrix = linkage(tot_seq, method='ward')
+            clusters = fcluster(linkage_matrix, horizon/cut, criterion='distance')
+            tot_seq['Cluster'] = clusters
+            val_sce = tot_seq.groupby('Cluster').mean()
+            pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+            pred_ori=val_sce.loc[pr==pr.max(),:]
+            pred_ori=pred_ori.mean(axis=0)
+            preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+            pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        else:     
+            pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+            pred_tot_pr.append(pd.Series(np.zeros((horizon,))))  
+
+
+    df_sf_2_sub = pd.concat(pred_tot_pr,axis=1)
+    df_sf_2_sub.columns=country_list['name']
+    df_sf_2_tot.append(df_sf_2_sub)  
+
+    
 # =============================================================================
 # Diff thres 
 # =============================================================================
@@ -839,8 +927,8 @@ df_sf_2_random.columns=country_list['name']
 # Plot total
 # =============================================================================
 
-df_sf_1_tot = df_sf_1_tot[:-2]
-df_sf_2_tot = df_sf_2_tot[:-2]
+#df_sf_1_tot = df_sf_1_tot[:-2]
+#df_sf_2_tot = df_sf_2_tot[:-2]
 
 df_sf_1_tot.append(df_sf_1_chad)
 df_sf_2_tot.append(df_sf_2_chad)
@@ -872,23 +960,26 @@ de_means = [arr.mean() for arr in de_list_sub]
 de_cis = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for arr in de_list_sub]
 
 
-x_ticks = ["Closest Pattern", "kNN-3", "kNN-5", "Thres - 0.2", "Thres - 0.3", "Thres - 0.4", "Thres - 0.5", 
-           "Thres - 0.75", "Thres - 1", "Wind-0", "Wind-1", "Wind-3", "Old Model",'Random']
+#x_ticks = ["Closest Pattern", "kNN-3", "kNN-5", "Thres - 0.2", "Thres - 0.3", "Thres - 0.4", "Thres - 0.5", 
+#           "Thres - 0.75", "Thres - 1", "Wind-0", "Wind-1", "Wind-3", "Old Model",'Random']
+
+x_ticks = ["Top match", "Top 3 matches", "Top 5 matches","cut=2","cut=4","cut=5","dist=0.2","dist=0.3","dist=0.4","dist=0.5","dist=0.75","dist=1","win=0","win=1","win=3","Chadefaux (2022)","Random"]
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
 ax1.errorbar(x=x_ticks, y=means, yerr=np.squeeze(cis), fmt='o', markersize=8, color='black', ecolor='black')
-ax1.set_ylabel("Mean MSE with 95% CI",fontsize=15)
-ax1.set_title("MSE",fontsize=15)
+ax1.set_ylabel("Mean squared error (ratio)",fontsize=25,labelpad=24)
+#ax1.set_title("MSE",fontsize=15)
 ax1.axhline(0, linestyle='--', color='gray')
-ax1.grid(True, linestyle='--', alpha=0.6)
+#ax1.grid(True, linestyle='--', alpha=0.6)
 ax2.errorbar(x=x_ticks, y=de_means, yerr=np.squeeze(de_cis), fmt='o', markersize=8, color='black', ecolor='black')
-ax2.set_ylabel("Mean DE with 95% CI",fontsize=15)
-ax2.set_title("DE",fontsize=15)
+ax2.set_ylabel("Difference explained (ratio)",fontsize=25)
+#ax2.set_title("DE",fontsize=15)
 ax2.axhline(0, linestyle='--', color='gray')
-ax2.grid(True, linestyle='--', alpha=0.6)
-ax1.tick_params(axis='both', which='major', labelsize=12)
-ax2.tick_params(axis='both', which='major', labelsize=12)
+#ax2.grid(True, linestyle='--', alpha=0.6)
+ax1.tick_params(axis='both', which='major', labelsize=15)
+ax2.tick_params(axis='both', which='major', labelsize=15)
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
+plt.savefig("out/robust.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
@@ -934,16 +1025,19 @@ for coun in range(len(df_input.columns)):
             
 means_z = [arr.mean() for arr in [np.array(l_mse_zero_not),np.array(l_mse_zero),np.array(l_mse_zero_not+l_mse_zero)]]
 cis_z = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for arr in [np.array(l_mse_zero_not),np.array(l_mse_zero),np.array(l_mse_zero_not+l_mse_zero)]]
-x_ticks = ['Not Zero After (14%)', 'Only Zero after (86%)','All']
-plt.figure(figsize=(8, 5))
+x_ticks = ['Non flat furture (14\%)', 'Flat furture (86\%)','All']
+plt.figure(figsize=(6, 5))
 plt.errorbar(x=x_ticks, y=means_z, yerr=np.squeeze(cis_z), fmt='o', markersize=8, color='black', ecolor='black')
-plt.ylabel("Mean Values with 95% CI",fontsize=15)
-plt.title("MSE of Zeros",fontsize=15)
+plt.ylabel("Mean squared error (ratio)",fontsize=25)
+#plt.title("MSE of Zeros",fontsize=15)
 plt.axhline(0,linestyle='--')
 plt.xlim(-0.5,2.5)
-ax1.tick_params(axis='both', which='major', labelsize=12)
-ax2.tick_params(axis='both', which='major', labelsize=12)
-plt.grid(True, linestyle='--', alpha=0.6)
+plt.yticks([-0.025,-0.02,-0.015,-0.01,-0.005,0,0.005],[-0.025,-0.02,-0.015,-0.01,-0.005,0,0.005])
+ax1.tick_params(axis='both', which='major', labelsize=15)
+ax2.tick_params(axis='both', which='major', labelsize=15)
+plt.xticks(rotation=45, ha='right')
+#plt.grid(True, linestyle='--', alpha=0.6)
+plt.savefig("out/flat.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 pair_pred=pd.DataFrame(pair_pred)
@@ -967,3 +1061,23 @@ plt.xlabel('Observed Sum',fontsize=15)
 plt.xlim(-5,150)
 plt.ylim(-5,150)
 plt.show()
+
+from scipy.spatial.distance import euclidean
+from tslearn.metrics import dtw
+a = [1, 2, 3, 2, 1]
+b = [2, 3, 2, 0.5, 1]
+c = [1, 3, 1]
+
+dtw(a,b)
+euclidean(a,b)
+
+
+
+
+
+
+
+
+
+
+
