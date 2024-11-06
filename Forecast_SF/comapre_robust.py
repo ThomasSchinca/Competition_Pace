@@ -963,20 +963,20 @@ de_cis = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for 
 #x_ticks = ["Closest Pattern", "kNN-3", "kNN-5", "Thres - 0.2", "Thres - 0.3", "Thres - 0.4", "Thres - 0.5", 
 #           "Thres - 0.75", "Thres - 1", "Wind-0", "Wind-1", "Wind-3", "Old Model",'Random']
 
-x_ticks = ["Top match", "Top 3 matches", "Top 5 matches","cut=2","cut=4","cut=5","dist=0.2","dist=0.3","dist=0.4","dist=0.5","dist=0.75","dist=1","win=0","win=1","win=3","Chadefaux (2022)","Random"]
+x_ticks = ["(a) Top match", "Top 3 matches", "Top 5 matches","(b) cut=2","cut=4","cut=5","(c) dist=0.2","dist=0.3","dist=0.4","dist=0.5","dist=0.75","dist=1","(d) win=0","win=1","win=3","(e) Chadefaux (2022)","(f) Random"]
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
 ax1.errorbar(x=x_ticks, y=means, yerr=np.squeeze(cis), fmt='o', markersize=8, color='black', ecolor='black')
-ax1.set_ylabel("Mean squared error (ratio)",fontsize=25,labelpad=24)
+ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=24)
 #ax1.set_title("MSE",fontsize=15)
 ax1.axhline(0, linestyle='--', color='gray')
 #ax1.grid(True, linestyle='--', alpha=0.6)
 ax2.errorbar(x=x_ticks, y=de_means, yerr=np.squeeze(de_cis), fmt='o', markersize=8, color='black', ecolor='black')
-ax2.set_ylabel("Difference explained (ratio)",fontsize=25)
+ax2.set_ylabel("Difference explained (log-ratio)")
 #ax2.set_title("DE",fontsize=15)
 ax2.axhline(0, linestyle='--', color='gray')
 #ax2.grid(True, linestyle='--', alpha=0.6)
-ax1.tick_params(axis='both', which='major', labelsize=15)
-ax2.tick_params(axis='both', which='major', labelsize=15)
+ax1.tick_params(axis='both', which='major')
+ax2.tick_params(axis='both', which='major')
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
 plt.savefig("out/robust.jpeg",dpi=400,bbox_inches="tight")
@@ -1025,17 +1025,17 @@ for coun in range(len(df_input.columns)):
             
 means_z = [arr.mean() for arr in [np.array(l_mse_zero_not),np.array(l_mse_zero),np.array(l_mse_zero_not+l_mse_zero)]]
 cis_z = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for arr in [np.array(l_mse_zero_not),np.array(l_mse_zero),np.array(l_mse_zero_not+l_mse_zero)]]
-x_ticks = ['Non flat furture (14\%)', 'Flat furture (86\%)','All']
-plt.figure(figsize=(6, 5))
+x_ticks = ['Non-flat furture (14\%)', 'Flat furture (86\%)','All']
+plt.figure(figsize=(10, 5))
 plt.errorbar(x=x_ticks, y=means_z, yerr=np.squeeze(cis_z), fmt='o', markersize=8, color='black', ecolor='black')
-plt.ylabel("Mean squared error (ratio)",fontsize=25)
+plt.ylabel("Mean squared error (log-ratio)")
 #plt.title("MSE of Zeros",fontsize=15)
 plt.axhline(0,linestyle='--')
 plt.xlim(-0.5,2.5)
 plt.yticks([-0.025,-0.02,-0.015,-0.01,-0.005,0,0.005],[-0.025,-0.02,-0.015,-0.01,-0.005,0,0.005])
-ax1.tick_params(axis='both', which='major', labelsize=15)
-ax2.tick_params(axis='both', which='major', labelsize=15)
-plt.xticks(rotation=45, ha='right')
+ax1.tick_params(axis='both', which='major')
+ax2.tick_params(axis='both', which='major')
+#plt.xticks(rotation=45, ha='right')
 #plt.grid(True, linestyle='--', alpha=0.6)
 plt.savefig("out/flat.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
