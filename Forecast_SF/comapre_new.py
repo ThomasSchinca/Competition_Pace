@@ -300,6 +300,7 @@ pred_tot_min=[]
 pred_tot_pr=[]
 horizon=12
 df_input_sub=df_input.iloc[:-24]
+cluster_dist=[]
 
 
 for coun in range(len(df_input_sub.columns)):
@@ -348,6 +349,7 @@ for coun in range(len(df_input_sub.columns)):
         
         # Proportions for each cluster        
         pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        cluster_dist.append(pr.max())
         
         # A. Get mean sequence with lowest intensity
         pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
@@ -364,7 +366,7 @@ for coun in range(len(df_input_sub.columns)):
         
         # Plot
         plt.figure(figsize=(10, 6))
-        plt.plot(preds, label='DTP model', linestyle="dashed",color='black',linewidth=2)
+        plt.plot(preds, label='Shape finder', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_1.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_1.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
@@ -391,7 +393,7 @@ for coun in range(len(df_input_sub.columns)):
         
         # Plot
         plt.figure(figsize=(10, 6))
-        plt.plot(pd.Series(np.zeros((horizon,))), label='DTP model', linestyle="dashed",color='black',linewidth=2)
+        plt.plot(pd.Series(np.zeros((horizon,))), label='Shape finder', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_1.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_1.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
@@ -572,6 +574,7 @@ for coun in range(len(df_input_sub.columns)):
         
         # Proportions for each cluster
         pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+        cluster_dist.append(pr.max())
         
         # A. Get mean sequence with lowest intensity
         pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
@@ -588,7 +591,7 @@ for coun in range(len(df_input_sub.columns)):
         
         # # Plot 
         plt.figure(figsize=(10, 6))
-        plt.plot(preds, label='DTP model', linestyle="dashed",color='black',linewidth=2)
+        plt.plot(preds, label='Shape finder', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
@@ -615,7 +618,7 @@ for coun in range(len(df_input_sub.columns)):
         
         # Plot 
         plt.figure(figsize=(10, 6))
-        plt.plot(pd.Series(np.zeros((horizon,))), label='DTP model', linestyle="dashed",color='black',linewidth=2)
+        plt.plot(pd.Series(np.zeros((horizon,))), label='Shape finder', linestyle="dashed",color='black',linewidth=2)
         plt.plot(df_preds_test_2.iloc[:12,coun].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
         plt.plot(df_obs_2.iloc[:,coun].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=5,fontsize=20)
@@ -624,7 +627,9 @@ for coun in range(len(df_input_sub.columns)):
         plt.yticks(size=25)
         plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
         plt.show()  
-     
+
+print(np.mean(cluster_dist))
+
 # Save
 df_sf_2= pd.concat(pred_tot_pr,axis=1)
 df_sf_2.columns=country_list['name']
@@ -948,8 +953,32 @@ err_views = pd.Series(err_views)
 err_zero = pd.Series(err_zero)
 err_t1 = pd.Series(err_t1)
 
+# Calculate DTW distance
+from tslearn.metrics import dtw
+dtw_sf_pr=[]
+dtw_views=[]
+dtw_zero=[]
+dtw_t1=[]
+for i in range(len(df_input.columns)):   
+    dtw_sf_pr.append(dtw(df_input.iloc[-24:-24+horizon,i], df_sf_1.iloc[:,i]))
+    dtw_views.append(dtw(df_input.iloc[-24:-24+horizon,i], df_preds_test_1.iloc[:12,i]))
+    dtw_zero.append(dtw(df_input.iloc[-24:-24+horizon,i], pd.Series(np.zeros((horizon,)))))
+    dtw_t1.append(dtw(df_input.iloc[-24:-24+horizon,i],df_input.iloc[-24-horizon:-24,i]))
+for i in range(len(df_input.columns)):   
+    dtw_sf_pr.append(dtw(df_input.iloc[-12:,i], df_sf_2.iloc[:,i]))
+    dtw_views.append(dtw(df_input.iloc[-12:,i], df_preds_test_2.iloc[:12,i]))
+    dtw_zero.append(dtw(df_input.iloc[-12:,i], pd.Series(np.zeros((horizon,)))))
+    dtw_t1.append(dtw(df_input.iloc[-12:,i],df_input.iloc[-24:-24+horizon,i]))
+dtw_sf_pr = pd.Series(dtw_sf_pr)
+dtw_views = pd.Series(dtw_views)
+dtw_zero = pd.Series(dtw_zero)
+dtw_t1 = pd.Series(dtw_t1)
+
 err_mix = err_views.copy()
-err_mix[ind_keep[df_keep_1]] = err_sf_pr.loc[ind_keep[df_keep_1]]
+err_mix[ind_keep[df_keep_1]] = dtw_sf_pr.loc[ind_keep[df_keep_1]]
+dtw_mix = dtw_views.copy()
+dtw_mix[ind_keep[df_keep_1]] = dtw_sf_pr.loc[ind_keep[df_keep_1]]
+
 d_mix = d_b.copy()
 d_mix[ind_keep[df_keep_1]] = d_nn[ind_keep[df_keep_1]]
 d_nn = d_nn[~np.isnan(d_nn)]
@@ -971,6 +1000,15 @@ mean_de = pd.DataFrame({
 means = [err_sf_pr.mean(),err_views.mean(),err_zero.mean(),err_t1.mean(),err_mix.mean()]
 std_error = [2*err_sf_pr.std()/np.sqrt(len(err_sf_pr)),2*err_views.std()/np.sqrt(len(err_views)),2*err_zero.std()/np.sqrt(len(err_zero)),2*err_t1.std()/np.sqrt(len(err_t1)),2*err_mix.std()/np.sqrt(len(err_mix))]
 mean_mse = pd.DataFrame({
+    'mean': means,
+    'std': std_error
+})
+
+
+# DTW
+means = [dtw_sf_pr.mean(),dtw_views.mean(),dtw_zero.mean(),dtw_t1.mean(),dtw_mix.mean()]
+std_error = [2*dtw_sf_pr.std()/np.sqrt(len(dtw_sf_pr)),2*dtw_views.std()/np.sqrt(len(dtw_views)),2*dtw_zero.std()/np.sqrt(len(dtw_zero)),2*dtw_t1.std()/np.sqrt(len(dtw_t1)),2*dtw_mix.std()/np.sqrt(len(dtw_mix))]
+mean_dtw = pd.DataFrame({
     'mean': means,
     'std': std_error
 })
@@ -1001,13 +1039,66 @@ plt.scatter(mean_mse["mean"][3],mean_de["mean"][3],color="black",s=150)
 plt.xlabel("Accuracy  (MSE reversed)")
 plt.ylabel("Difference explained  (DE)")
 ax.invert_xaxis()
-plt.text(1600000, 0.265, "DTP", size=20, color='black')
+plt.text(1600000, 0.265, "Shape finder", size=20, color='black')
 plt.text(1570000, 0.231, "ViEWS", size=20, color='black')
 plt.text(1500000, 0.005, "Null", size=20, color='black')
 plt.text(3050000, 0.29, "t-1", size=20, color='black')
 ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
-ax.set_xticks([0, 1500000,3000000,4500000,6000000,7500000])
+ax.set_xlim(3200000,1300000)
 plt.savefig("out/scatter1.jpeg",dpi=400,bbox_inches="tight")
+
+# DTW
+fig,ax = plt.subplots(figsize=(12,8))
+plt.scatter(mean_dtw["mean"][0],mean_de["mean"][0],color="black",s=150)
+plt.scatter(mean_dtw["mean"][1],mean_de["mean"][1],color="black",s=150)
+plt.scatter(mean_dtw["mean"][2],mean_de["mean"][2],color="black",s=150)
+plt.scatter(mean_dtw["mean"][3],mean_de["mean"][3],color="black",s=150)
+ax.invert_xaxis()
+plt.xlabel("Similarity  (DTW reversed)")
+plt.ylabel("Difference explained  (DE)")
+plt.text(420, 0.265, "Shape finder", size=20, color='black')
+plt.text(354, 0.231, "ViEWS", size=20, color='black')
+plt.text(357, 0.005, "Null", size=20, color='black')
+plt.text(629, 0.29, "t-1", size=20, color='black')
+ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
+ax.set_xticks([350,400,450,500,550,600,650])
+ax.set_xlim(650,330)
+plt.savefig("out/scatter1a.jpeg",dpi=400,bbox_inches="tight")
+
+# Combined
+fig, axs = plt.subplots(1, 2, figsize=(16,8))
+axs[0].scatter(mean_mse["mean"][0],mean_de["mean"][0],color="black",s=150)
+axs[0].scatter(mean_mse["mean"][1],mean_de["mean"][1],color="black",s=150)
+axs[0].scatter(mean_mse["mean"][2],mean_de["mean"][2],color="black",s=150)
+axs[0].scatter(mean_mse["mean"][3],mean_de["mean"][3],color="black",s=150)
+axs[0].invert_xaxis()
+axs[0].set_xlabel("Accuracy  (MSE reversed)")
+axs[0].set_ylabel("Difference explained  (DE)")
+axs[0].text(1600000, 0.265, "Shape finder", size=20, color='black')
+axs[0].text(1570000, 0.231, "ViEWS", size=20, color='black')
+axs[0].text(1500000, 0.005, "Null", size=20, color='black')
+axs[0].text(3050000, 0.29, "t-1", size=20, color='black')
+axs[0].set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
+axs[0].set_xlim(3200000,1200000)
+
+axs[1].scatter(mean_dtw["mean"][0],mean_de["mean"][0],color="black",s=150)
+axs[1].scatter(mean_dtw["mean"][1],mean_de["mean"][1],color="black",s=150)
+axs[1].scatter(mean_dtw["mean"][2],mean_de["mean"][2],color="black",s=150)
+axs[1].scatter(mean_dtw["mean"][3],mean_de["mean"][3],color="black",s=150)
+axs[1].invert_xaxis()
+axs[1].set_xlabel("Similarity  (DTW reversed)")
+axs[1].set_ylabel("Difference explained  (DE)")
+axs[1].text(420, 0.265, "Shape finder", size=20, color='black')
+axs[1].text(354, 0.231, "ViEWS", size=20, color='black')
+axs[1].text(357, 0.005, "Null", size=20, color='black')
+axs[1].text(629, 0.29, "t-1", size=20, color='black')
+axs[1].set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
+axs[1].set_xticks([350,400,450,500,550,600,650])
+axs[1].set_xlim(650,330)
+axs[1].set_yticks([])  # Remove y ticks
+axs[1].set_ylabel('')  
+plt.subplots_adjust(wspace=0.03)
+plt.savefig("out/scatter1b.jpeg",dpi=400,bbox_inches="tight")
 
 # Difference explained
 means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
@@ -1021,6 +1112,14 @@ mean_de = pd.DataFrame({
 means = [np.log((err_sf_pr+1)/(err_mix+1)).mean(),np.log((err_views+1)/(err_mix+1)).mean(),np.log((err_zero+1)/(err_mix+1)).mean(),np.log((err_t1+1)/(err_mix+1)).mean()]
 std_error = [2*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
 mean_mse = pd.DataFrame({
+    'mean': means,
+    'std': std_error
+})
+
+# DTW
+means = [np.log((dtw_sf_pr+1)/(dtw_mix+1)).mean(),np.log((dtw_views+1)/(dtw_mix+1)).mean(),np.log((dtw_zero+1)/(dtw_mix+1)).mean(),np.log((dtw_t1+1)/(dtw_mix+1)).mean()]
+std_error = [2*np.log((x+1)/(dtw_mix+1)).std()/np.sqrt(len((x-dtw_mix))) for x in [dtw_sf_pr,dtw_views,dtw_zero,dtw_t1]]
+mean_dtw = pd.DataFrame({
     'mean': means,
     'std': std_error
 })
@@ -1041,11 +1140,35 @@ plt.ylim(-0.2,0.06)
 plt.text(0.285, 0.004, "t-1", size=20, color='dimgray')
 plt.text(0.035,-0.158, "Null", size=20, color='dimgray')
 plt.text(0.026, -0.03, "ViEWS", size=20, color='dimgray')
-plt.text(0.09, -0.003, 'DTP', size=20,color="dimgray")
+plt.text(0.138, -0.003, 'Shape finder', size=20,color="dimgray")
 plt.text(0.033, 0.008, 'Compound', size=20,color="black")
 ax.set_yticks([-0.2,-0.15,-0.1,-0.05,0,0.05])
 ax.set_xticks([0, 0.1,0.2,0.3,0.4,0.5])
 plt.savefig("out/scatter2.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+# DTW
+name=['SF','Views','Null','t-1']
+
+fig,ax = plt.subplots(figsize=(12,8))
+for i in range(4):
+    plt.scatter(mean_dtw["mean"][i],mean_de["mean"][i],color="gray",s=150)
+    plt.plot([mean_dtw["mean"][i],mean_dtw["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
+    plt.plot([mean_dtw["mean"][i]-mean_dtw["std"][i],mean_dtw["mean"][i]+mean_dtw["std"][i]],[mean_de["mean"][i],mean_de["mean"][i]],linewidth=3,color="gray")
+plt.scatter(0,0,color="black",s=150)
+plt.xlabel("Dynamic time warping ratio (reversed)")
+plt.ylabel("Difference explained ratio (DE)")
+
+plt.xlim(0.1,-0.12)
+plt.ylim(-0.2,0.06)
+plt.text(0.285, 0.004, "t-1", size=20, color='dimgray')
+plt.text(0.035,-0.158, "Null", size=20, color='dimgray')
+plt.text(0.026, -0.03, "ViEWS", size=20, color='dimgray')
+plt.text(0.138, -0.003, 'Shape finder', size=20,color="dimgray")
+plt.text(0.033, 0.008, 'Compound', size=20,color="black")
+ax.set_yticks([-0.2,-0.15,-0.1,-0.05,0,0.05])
+ax.set_xticks([0, 0.1,0.2,0.3,0.4,0.5])
+plt.savefig("out/scatter2a.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 ### Find best performing cases ###
@@ -1092,7 +1215,7 @@ for i in range(len(df_input.columns)):
 # Create a figure and a 2x2 grid of subplots
 fig, axs = plt.subplots(2, 2, figsize=(12,8))
 # Plot data in each subplot
-axs[0, 0].plot(df_sf_2.iloc[:,47], label='DTP model', linestyle="dashed",color='black',linewidth=2)
+axs[0, 0].plot(df_sf_2.iloc[:,47], label='Shape finder', linestyle="dashed",color='black',linewidth=2)
 axs[0, 0].plot(df_preds_test_2.iloc[:12,47].reset_index(drop=True), label='ViEWS ensemble',linestyle="dotted",color='black',linewidth=2)
 axs[0, 0].plot(df_obs_2.iloc[:,47].reset_index(drop=True),label='Actuals',linestyle="solid",color="black",linewidth=2)
 axs[0, 0].set_xticks([])
@@ -1153,8 +1276,8 @@ def err(y_true,y_pred):
     return (np.log(y_true+1)-np.log(y_pred+1))**2
 
 # Calculate MSE
-dict_hor = {'DTP':[],'ViEWS':[],'Zeros':[],'t-1':[],'Compound':[]}
-dict_hor = {'DTP':[],'ViEWS':[],'Zeros':[],'t-1':[]}
+dict_hor = {'Shape finder':[],'ViEWS':[],'Zeros':[],'t-1':[],'Compound':[]}
+dict_hor = {'Shape finder':[],'ViEWS':[],'Zeros':[],'t-1':[]}
 for h in range(12):
     err_sf_pr=[]
     err_views=[]
@@ -1190,7 +1313,7 @@ for h in range(12):
     err_t1 = np.log((pd.Series(err_t1)+1)/(pd.Series(err_mix)+1))
     #err_mix = np.log((pd.Series(err_mix)+1)/(pd.Series(err_sf_pr)+1))
     
-    dict_hor['DTP'].append([err_sf_pr.mean(),err_sf_pr.std()])
+    dict_hor['Shape finder'].append([err_sf_pr.mean(),err_sf_pr.std()])
     dict_hor['ViEWS'].append([err_views.mean(),err_views.std()])
     dict_hor['Zeros'].append([err_zero.mean(),err_zero.std()])
     dict_hor['t-1'].append([err_t1.mean(),err_t1.std()])
@@ -1308,8 +1431,8 @@ for mod in [err_sf_pr,err_views,err_zero,err_t1]:
 mean_de=pd.DataFrame(sum_tot_m).T
 std_de =pd.DataFrame(sd_tot_m).T
 
-mean_de.columns=['DTP','ViEWS','Zeros','t-1']
-std_de.columns = ['DTP','ViEWS','Zeros','t-1']
+mean_de.columns=['Shape finder','ViEWS','Zeros','t-1']
+std_de.columns = ['Shape finder','ViEWS','Zeros','t-1']
 
 #mean_de.drop('Zeros', axis=1, inplace=True)
 #std_de.drop('Zeros', axis=1, inplace=True)
@@ -1333,8 +1456,8 @@ plt.show()
 # Define colors and labels
 colors = ['black', 'gray', 'royalblue',"lightskyblue"]
 letters=['A','B','C','D']
-mean_mse.columns=['DTP','ViEWS','Null','t-1']
-mean_de.columns=['DTP','ViEWS','Null','t-1']
+mean_mse.columns=['Shape finder','ViEWS','Null','t-1']
+mean_de.columns=['Shape finder','ViEWS','Null','t-1']
 
 name_m = mean_mse.iloc[:, [0, 1, 2,3]].columns.tolist()
 fig,ax = plt.subplots(figsize=(12,8))
@@ -1391,8 +1514,8 @@ plt.show()
 # Define colors and labels
 colors = ['black', 'gray', 'royalblue',"lightskyblue"]
 letters=['A','B','C','D']
-mean_mse.columns=['DTP','ViEWS','Null','t-1']
-mean_de.columns=['DTP','ViEWS','Null','t-1']
+mean_mse.columns=['Shape finder','ViEWS','Null','t-1']
+mean_de.columns=['Shape finder','ViEWS','Null','t-1']
 
 name_m = mean_mse.iloc[:, [0, 1,3]].columns.tolist()
 fig,ax = plt.subplots(figsize=(12,8))
@@ -2127,7 +2250,8 @@ df_input = df_input.fillna(0)
 h_train=10
 h=12
 
-fig, axs = plt.subplots(6, 6, figsize=(18,12))
+fig, axs = plt.subplots(5, 5, figsize=(19,12))
+
 row=0
 col=0
 nume=30
@@ -2140,16 +2264,19 @@ while flag==True:
             ser=(ser-ser.min())/(ser.max()-ser.min())
             diff = ser.diff()
             if (abs(diff).std()<0.25) & (ser.mean()>0.44):
-                axs[row, col].plot(ser.reset_index(drop=True), linewidth=2, color='black')
+                axs[row, col].plot(ser.reset_index(drop=True), linewidth=3, color='black')
                 remove_box(axs[row, col])
                 axs[row, col].set_xticks([])
+                axs[row, col].set_ylim(-0.1,1.1)
                 axs[row, col].set_yticks([])
-                axs[row, col].set_title(f"{df_input.columns[coun]}; {str(df_input.iloc[nume:nume+h_train,coun].index[0]+timedelta(days=365))[:7]}---{str(df_input.iloc[nume:nume+h_train,coun].index[-1]+timedelta(days=365))[:7]}",size=12)
+                #axs[row, col].set_title(f"{df_input.columns[coun]} {str(df_input.iloc[nume:nume+h_train,coun].index[0]+timedelta(days=365))[:7]}; {str(df_input.iloc[nume:nume+h_train,coun].index[-1]+timedelta(days=365))[:7]}",size=20)
+                axs[row, col].set_title(f"{df_input.columns[coun]}",size=40)
+
                 row=row+1
-                if row==6:
+                if row==5:
                     col=col+1
                     row=0
-                if col==6:
+                if col==5:
                     flag=False
 plt.tight_layout()
 plt.savefig("out/cases_best_grid.jpeg",dpi=400,bbox_inches="tight")
@@ -2157,7 +2284,7 @@ plt.show()
 
 
 # Bad shape
-fig, axs = plt.subplots(5, 5, figsize=(18,12))
+fig, axs = plt.subplots(5, 5, figsize=(19,12))
 row=0
 col=0
 nume=1
@@ -2170,12 +2297,18 @@ while flag==True:
             ser=(ser-ser.min())/(ser.max()-ser.min())
             diff = ser.diff()
             if (ser.std()>0.37) & (ser.mean()<0.4):
-                axs[row, col].plot(ser.reset_index(drop=True), linewidth=2, color='black')
+                axs[row, col].plot(ser.reset_index(drop=True), linewidth=3, color='black')
                 remove_box(axs[row, col])
                 axs[row, col].set_xticks([])
+                axs[row, col].set_ylim(-0.1,1.1)
                 axs[row, col].set_yticks([])
-                axs[row, col].set_title(df_input.columns[coun])
-                axs[row, col].set_title(f"{df_input.columns[coun]}; {str(df_input.iloc[nume:nume+h_train,coun].index[0]+timedelta(days=365))[:7]}---{str(df_input.iloc[nume:nume+h_train,coun].index[-1]+timedelta(days=365))[:7]}",size=12)
+                if df_input.columns[coun]=="United Kingdom":
+                    axs[row, col].set_title(f"UK",size=40)
+                elif df_input.columns[coun]=="Papua New Guinea":
+                    axs[row, col].set_title(f"PNG",size=40)                   
+                #axs[row, col].set_title(f"{df_input.columns[coun]} {str(df_input.iloc[nume:nume+h_train,coun].index[0]+timedelta(days=365))[:7]}; {str(df_input.iloc[nume:nume+h_train,coun].index[-1]+timedelta(days=365))[:7]}",size=20)
+                else:
+                    axs[row, col].set_title(f"{df_input.columns[coun]}",size=40)
 
                 row=row+1
                 if row==5:
