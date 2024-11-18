@@ -524,6 +524,96 @@ for thres in [0.2,0.3,0.4,0.5,0.75,1]:
 # plt.show()
 
 
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f)
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+h_train=10
+df_input_sub=df_input.iloc[:-24]
+for coun in range(len(df_input_sub.columns)):
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]            
+        l_find=dict_m[df_input.columns[coun]]          
+        tot_seq = []
+        for series, weight in l_find:
+            if weight==0:
+                tot_seq.append([series.name, series.index[-1],series.min(),series.max(),series.sum(),1/0.0001])
+            else:
+                tot_seq.append([series.name, series.index[-1],series.min(),series.max(),series.sum(),1/weight])        
+        pred_seq=[]
+        w_list=[]
+        for col,last_date,mi,ma,somme,wei in tot_seq:
+            date=df_tot_m.iloc[:-24].index.get_loc(last_date)            
+            if date+horizon<len(df_tot_m.iloc[:-24]):                              
+                seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)               
+                seq = (seq - mi) / (ma - mi)                                
+                pred_seq.append(seq.tolist())     
+                w_list.append(wei)                
+        tot_seq=pd.DataFrame(pred_seq)
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        tot_seq['weights'] = w_list
+        val_sce = tot_seq.groupby('Cluster').apply(lambda x: (x.iloc[:, :12].T * x['weights']).sum(axis=1) / x['weights'].sum())
+        pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        pred_ori=val_sce.loc[pr==pr.max(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+    else:
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))
+
+df_sf_1_w_clu = pd.concat(pred_tot_pr,axis=1)
+df_sf_1_w_clu.columns=country_list['name']
+df_sf_1_w_clu = df_sf_1_w_clu.fillna(0)
+
+
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+df_input_sub=df_input.iloc[:-12]
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+for coun in range(len(df_input_sub.columns)):
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        l_find=dict_m[df_input.columns[coun]]
+        tot_seq = []
+        for series, weight in l_find:
+            if weight==0:
+                tot_seq.append([series.name, series.index[-1],series.min(),series.max(),series.sum(),1/0.0001])
+            else:
+                tot_seq.append([series.name, series.index[-1],series.min(),series.max(),series.sum(),1/weight])        
+        pred_seq=[]
+        w_list=[]        
+        for col,last_date,mi,ma,somme,wei in tot_seq:
+            date=df_tot_m.iloc[:-12].index.get_loc(last_date)       
+            if date+horizon<len(df_tot_m.iloc[:-12]):               
+                seq=df_tot_m.iloc[:-12].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-12].columns.get_loc(col)].reset_index(drop=True)
+                seq = (seq - mi) / (ma - mi)              
+                pred_seq.append(seq.tolist()) 
+                w_list.append(wei)                
+        tot_seq=pd.DataFrame(pred_seq)       
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        tot_seq['weights'] = w_list
+        val_sce = tot_seq.groupby('Cluster').apply(lambda x: (x.iloc[:, :12].T * x['weights']).sum(axis=1) / x['weights'].sum())
+        pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+        pred_ori=val_sce.loc[pr==pr.max(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+    else:     
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))  
+    
+df_sf_2_w_clu = pd.concat(pred_tot_pr,axis=1)
+df_sf_2_w_clu.columns=country_list['name']
+df_sf_2_w_clu = df_sf_2_w_clu.fillna(0)
+
 # =============================================================================
 # Chadefaux comp
 # =============================================================================
@@ -936,6 +1026,9 @@ df_sf_2_tot.append(df_sf_2_chad)
 df_sf_1_tot.append(df_sf_1_random)
 df_sf_2_tot.append(df_sf_2_random)
 
+df_sf_1_tot.append(df_sf_1_w_clu)
+df_sf_2_tot.append(df_sf_2_w_clu)
+
 mse_list_sub=[]
 for n_k in range(len(df_sf_2_tot)):
     err_sf_pr=[]
@@ -954,6 +1047,8 @@ for n_k in range(len(df_sf_2_tot)):
     d_sub2 = diff_explained(df_input.iloc[-12:],df_sf_2_tot[n_k])
     d_sub = np.concatenate([d_sub,d_sub2])
     de_list_sub.append(np.log((d_nn+1)/(d_sub+1)))
+    
+    
 means = [arr.mean() for arr in mse_list_sub]
 cis = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for arr in mse_list_sub]
 de_means = [arr.mean() for arr in de_list_sub]
@@ -963,7 +1058,7 @@ de_cis = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for 
 #x_ticks = ["Closest Pattern", "kNN-3", "kNN-5", "Thres - 0.2", "Thres - 0.3", "Thres - 0.4", "Thres - 0.5", 
 #           "Thres - 0.75", "Thres - 1", "Wind-0", "Wind-1", "Wind-3", "Old Model",'Random']
 
-x_ticks = ["(a) Top match", "Top 3 matches", "Top 5 matches","(b) cut=2","cut=4","cut=5","(c) dist=0.2","dist=0.3","dist=0.4","dist=0.5","dist=0.75","dist=1","(d) win=0","win=1","win=3","(e) Chadefaux (2022)","(f) Random"]
+x_ticks = ["(a) Top match", "Top 3 matches", "Top 5 matches","(b) cut=2","cut=4","cut=5","(c) dist=0.2","dist=0.3","dist=0.4","dist=0.5","dist=0.75","dist=1","(d) win=0","win=1","win=3","(e) Chadefaux (2022)","(f) Random","(g) Weighted cluster"]
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
 ax1.errorbar(x=x_ticks, y=means, yerr=np.squeeze(cis), fmt='o', markersize=8, color='black', ecolor='black')
 ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=24)
@@ -982,6 +1077,135 @@ plt.tight_layout()
 plt.savefig("out/robust.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
+means_s=means[:3]
+cis_s=cis[:3]
+de_means_s=de_means[:3]
+de_cis_s=de_cis[:3]
+x_ticks = ["Top match", "Top 3 matches", "Top 5 matches"]
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+ax1.errorbar(x=x_ticks, y=means_s, yerr=np.squeeze(cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=19)
+#ax1.set_title("MSE",fontsize=15)
+ax1.axhline(0, linestyle='--', color='gray')
+#ax1.grid(True, linestyle='--', alpha=0.6)
+ax2.errorbar(x=x_ticks, y=de_means_s, yerr=np.squeeze(de_cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax2.set_ylabel("Difference explained (log-ratio)")
+#ax2.set_title("DE",fontsize=15)
+ax2.axhline(0, linestyle='--', color='gray')
+#ax2.grid(True, linestyle='--', alpha=0.6)
+ax1.tick_params(axis='both', which='major')
+ax1.set_yticks([0,0.25,0.5,0.75,1],["0.00","0.25","0.50","0.75","1.00"])
+ax1.set_ylim(-0.1,1.1)
+ax2.set_yticks([-0.02,0.0,0.02,0.04,0.06],["--0.02","0.00","0.02","0.04","0.06"])
+ax2.set_ylim(-0.028,0.075)
+ax2.tick_params(axis='both', which='major')
+plt.tight_layout()
+plt.savefig("out/robust_a.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+means_s=means[3:6]
+cis_s=cis[3:6]
+de_means_s=de_means[3:6]
+de_cis_s=de_cis[3:6]
+x_ticks = ["cut=2","cut=4","cut=5"]
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+ax1.errorbar(x=x_ticks, y=means_s, yerr=np.squeeze(cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=19)
+#ax1.set_title("MSE",fontsize=15)
+ax1.axhline(0, linestyle='--', color='gray')
+#ax1.grid(True, linestyle='--', alpha=0.6)
+ax2.errorbar(x=x_ticks, y=de_means_s, yerr=np.squeeze(de_cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax2.set_ylabel("Difference explained (log-ratio)")
+#ax2.set_title("DE",fontsize=15)
+ax2.axhline(0, linestyle='--', color='gray')
+#ax2.grid(True, linestyle='--', alpha=0.6)
+ax1.tick_params(axis='both', which='major')
+ax1.set_yticks([0,0.25,0.5,0.75,1],["0.00","0.25","0.50","0.75","1.00"])
+ax1.set_ylim(-0.1,1.1)
+ax2.set_yticks([-0.02,0.0,0.02,0.04,0.06],["--0.02","0.00","0.02","0.04","0.06"])
+ax2.set_ylim(-0.028,0.075)
+ax2.tick_params(axis='both', which='major')
+plt.tight_layout()
+plt.savefig("out/robust_b.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+means_s=means[6:12]
+cis_s=cis[6:12]
+de_means_s=de_means[6:12]
+de_cis_s=de_cis[6:12]
+x_ticks = ["dist=0.2","dist=0.3","dist=0.4","dist=0.5","dist=0.75","dist=1"]
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+ax1.errorbar(x=x_ticks, y=means_s, yerr=np.squeeze(cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=19)
+#ax1.set_title("MSE",fontsize=15)
+ax1.axhline(0, linestyle='--', color='gray')
+#ax1.grid(True, linestyle='--', alpha=0.6)
+ax2.errorbar(x=x_ticks, y=de_means_s, yerr=np.squeeze(de_cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax2.set_ylabel("Difference explained (log-ratio)")
+#ax2.set_title("DE",fontsize=15)
+ax2.axhline(0, linestyle='--', color='gray')
+#ax2.grid(True, linestyle='--', alpha=0.6)
+ax1.tick_params(axis='both', which='major')
+ax1.set_yticks([0,0.25,0.5,0.75,1],["0.00","0.25","0.50","0.75","1.00"])
+ax1.set_ylim(-0.1,1.1)
+ax2.set_yticks([-0.02,0.0,0.02,0.04,0.06],["--0.02","0.00","0.02","0.04","0.06"])
+ax2.set_ylim(-0.028,0.075)
+ax2.tick_params(axis='both', which='major')
+plt.tight_layout()
+plt.savefig("out/robust_c.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+means_s=means[12:15]
+cis_s=cis[12:15]
+de_means_s=de_means[12:15]
+de_cis_s=de_cis[12:15]
+x_ticks = ["win=0","win=1","win=3",]
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+ax1.errorbar(x=x_ticks, y=means_s, yerr=np.squeeze(cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=19)
+#ax1.set_title("MSE",fontsize=15)
+ax1.axhline(0, linestyle='--', color='gray')
+#ax1.grid(True, linestyle='--', alpha=0.6)
+ax2.errorbar(x=x_ticks, y=de_means_s, yerr=np.squeeze(de_cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax2.set_ylabel("Difference explained (log-ratio)")
+#ax2.set_title("DE",fontsize=15)
+ax2.axhline(0, linestyle='--', color='gray')
+#ax2.grid(True, linestyle='--', alpha=0.6)
+ax1.tick_params(axis='both', which='major')
+ax1.set_yticks([0,0.25,0.5,0.75,1],["0.00","0.25","0.50","0.75","1.00"])
+ax1.set_ylim(-0.1,1.1)
+ax2.set_yticks([-0.02,0.0,0.02,0.04,0.06],["--0.02","0.00","0.02","0.04","0.06"])
+ax2.set_ylim(-0.028,0.075)
+ax2.tick_params(axis='both', which='major')
+plt.tight_layout()
+plt.savefig("out/robust_d.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
+
+means_s=means[15:18]
+cis_s=cis[15:18]
+de_means_s=de_means[15:18]
+de_cis_s=de_cis[15:18]
+x_ticks = ["Chadefaux (2022)","Random","Weighted cluster"]
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+ax1.errorbar(x=x_ticks, y=means_s, yerr=np.squeeze(cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax1.set_ylabel("Mean squared error (log-ratio)",labelpad=19)
+#ax1.set_title("MSE",fontsize=15)
+ax1.axhline(0, linestyle='--', color='gray')
+#ax1.grid(True, linestyle='--', alpha=0.6)
+ax2.errorbar(x=x_ticks, y=de_means_s, yerr=np.squeeze(de_cis_s), fmt='o', markersize=8, color='black', ecolor='black')
+ax2.set_ylabel("Difference explained (log-ratio)")
+#ax2.set_title("DE",fontsize=15)
+ax2.axhline(0, linestyle='--', color='gray')
+#ax2.grid(True, linestyle='--', alpha=0.6)
+ax1.tick_params(axis='both', which='major')
+ax1.set_yticks([0,0.25,0.5,0.75,1],["0.00","0.25","0.50","0.75","1.00"])
+ax1.set_ylim(-0.1,1.1)
+ax2.set_yticks([-0.02,0.0,0.02,0.04,0.06],["--0.02","0.00","0.02","0.04","0.06"])
+ax2.set_ylim(-0.028,0.075)
+ax2.tick_params(axis='both', which='major')
+plt.tight_layout()
+plt.savefig("out/robust_e.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
 
 # =============================================================================
 # Analysis of the zeros
@@ -1069,6 +1293,8 @@ b = [2, 3, 2, 0.5, 1]
 c = [1, 3, 1]
 
 dtw(a,b)
+dtw(a,c)
+
 euclidean(a,b)
 
 
