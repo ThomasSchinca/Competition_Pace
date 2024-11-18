@@ -975,10 +975,9 @@ dtw_zero = pd.Series(dtw_zero)
 dtw_t1 = pd.Series(dtw_t1)
 
 err_mix = err_views.copy()
-err_mix[ind_keep[df_keep_1]] = dtw_sf_pr.loc[ind_keep[df_keep_1]]
+err_mix[ind_keep[df_keep_1]] = err_sf_pr.loc[ind_keep[df_keep_1]]
 dtw_mix = dtw_views.copy()
 dtw_mix[ind_keep[df_keep_1]] = dtw_sf_pr.loc[ind_keep[df_keep_1]]
-
 d_mix = d_b.copy()
 d_mix[ind_keep[df_keep_1]] = d_nn[ind_keep[df_keep_1]]
 d_nn = d_nn[~np.isnan(d_nn)]
@@ -1000,15 +999,6 @@ mean_de = pd.DataFrame({
 means = [err_sf_pr.mean(),err_views.mean(),err_zero.mean(),err_t1.mean(),err_mix.mean()]
 std_error = [2*err_sf_pr.std()/np.sqrt(len(err_sf_pr)),2*err_views.std()/np.sqrt(len(err_views)),2*err_zero.std()/np.sqrt(len(err_zero)),2*err_t1.std()/np.sqrt(len(err_t1)),2*err_mix.std()/np.sqrt(len(err_mix))]
 mean_mse = pd.DataFrame({
-    'mean': means,
-    'std': std_error
-})
-
-
-# DTW
-means = [dtw_sf_pr.mean(),dtw_views.mean(),dtw_zero.mean(),dtw_t1.mean(),dtw_mix.mean()]
-std_error = [2*dtw_sf_pr.std()/np.sqrt(len(dtw_sf_pr)),2*dtw_views.std()/np.sqrt(len(dtw_views)),2*dtw_zero.std()/np.sqrt(len(dtw_zero)),2*dtw_t1.std()/np.sqrt(len(dtw_t1)),2*dtw_mix.std()/np.sqrt(len(dtw_mix))]
-mean_dtw = pd.DataFrame({
     'mean': means,
     'std': std_error
 })
@@ -1044,61 +1034,8 @@ plt.text(1570000, 0.231, "ViEWS", size=20, color='black')
 plt.text(1500000, 0.005, "Null", size=20, color='black')
 plt.text(3050000, 0.29, "t-1", size=20, color='black')
 ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
-ax.set_xlim(3200000,1300000)
+ax.set_xticks([0, 1500000,3000000,4500000,6000000,7500000])
 plt.savefig("out/scatter1.jpeg",dpi=400,bbox_inches="tight")
-
-# DTW
-fig,ax = plt.subplots(figsize=(12,8))
-plt.scatter(mean_dtw["mean"][0],mean_de["mean"][0],color="black",s=150)
-plt.scatter(mean_dtw["mean"][1],mean_de["mean"][1],color="black",s=150)
-plt.scatter(mean_dtw["mean"][2],mean_de["mean"][2],color="black",s=150)
-plt.scatter(mean_dtw["mean"][3],mean_de["mean"][3],color="black",s=150)
-ax.invert_xaxis()
-plt.xlabel("Similarity  (DTW reversed)")
-plt.ylabel("Difference explained  (DE)")
-plt.text(420, 0.265, "Shape finder", size=20, color='black')
-plt.text(354, 0.231, "ViEWS", size=20, color='black')
-plt.text(357, 0.005, "Null", size=20, color='black')
-plt.text(629, 0.29, "t-1", size=20, color='black')
-ax.set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
-ax.set_xticks([350,400,450,500,550,600,650])
-ax.set_xlim(650,330)
-plt.savefig("out/scatter1a.jpeg",dpi=400,bbox_inches="tight")
-
-# Combined
-fig, axs = plt.subplots(1, 2, figsize=(16,8))
-axs[0].scatter(mean_mse["mean"][0],mean_de["mean"][0],color="black",s=150)
-axs[0].scatter(mean_mse["mean"][1],mean_de["mean"][1],color="black",s=150)
-axs[0].scatter(mean_mse["mean"][2],mean_de["mean"][2],color="black",s=150)
-axs[0].scatter(mean_mse["mean"][3],mean_de["mean"][3],color="black",s=150)
-axs[0].invert_xaxis()
-axs[0].set_xlabel("Accuracy  (MSE reversed)")
-axs[0].set_ylabel("Difference explained  (DE)")
-axs[0].text(1600000, 0.265, "Shape finder", size=20, color='black')
-axs[0].text(1570000, 0.231, "ViEWS", size=20, color='black')
-axs[0].text(1500000, 0.005, "Null", size=20, color='black')
-axs[0].text(3050000, 0.29, "t-1", size=20, color='black')
-axs[0].set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
-axs[0].set_xlim(3200000,1200000)
-
-axs[1].scatter(mean_dtw["mean"][0],mean_de["mean"][0],color="black",s=150)
-axs[1].scatter(mean_dtw["mean"][1],mean_de["mean"][1],color="black",s=150)
-axs[1].scatter(mean_dtw["mean"][2],mean_de["mean"][2],color="black",s=150)
-axs[1].scatter(mean_dtw["mean"][3],mean_de["mean"][3],color="black",s=150)
-axs[1].invert_xaxis()
-axs[1].set_xlabel("Similarity  (DTW reversed)")
-axs[1].set_ylabel("Difference explained  (DE)")
-axs[1].text(420, 0.265, "Shape finder", size=20, color='black')
-axs[1].text(354, 0.231, "ViEWS", size=20, color='black')
-axs[1].text(357, 0.005, "Null", size=20, color='black')
-axs[1].text(629, 0.29, "t-1", size=20, color='black')
-axs[1].set_yticks([0, 0.05, 0.1, 0.15, 0.2, 0.25,0.3,0.35])
-axs[1].set_xticks([350,400,450,500,550,600,650])
-axs[1].set_xlim(650,330)
-axs[1].set_yticks([])  # Remove y ticks
-axs[1].set_ylabel('')  
-plt.subplots_adjust(wspace=0.03)
-plt.savefig("out/scatter1b.jpeg",dpi=400,bbox_inches="tight")
 
 # Difference explained
 means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
@@ -1112,14 +1049,6 @@ mean_de = pd.DataFrame({
 means = [np.log((err_sf_pr+1)/(err_mix+1)).mean(),np.log((err_views+1)/(err_mix+1)).mean(),np.log((err_zero+1)/(err_mix+1)).mean(),np.log((err_t1+1)/(err_mix+1)).mean()]
 std_error = [2*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
 mean_mse = pd.DataFrame({
-    'mean': means,
-    'std': std_error
-})
-
-# DTW
-means = [np.log((dtw_sf_pr+1)/(dtw_mix+1)).mean(),np.log((dtw_views+1)/(dtw_mix+1)).mean(),np.log((dtw_zero+1)/(dtw_mix+1)).mean(),np.log((dtw_t1+1)/(dtw_mix+1)).mean()]
-std_error = [2*np.log((x+1)/(dtw_mix+1)).std()/np.sqrt(len((x-dtw_mix))) for x in [dtw_sf_pr,dtw_views,dtw_zero,dtw_t1]]
-mean_dtw = pd.DataFrame({
     'mean': means,
     'std': std_error
 })
@@ -1148,29 +1077,156 @@ plt.savefig("out/scatter2.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 # DTW
-name=['SF','Views','Null','t-1']
-
+ 
+ 
+means = [np.log((dtw_views+1)/(dtw_sf_pr+1)).mean(),np.log((dtw_zero+1)/(dtw_sf_pr+1)).mean(),np.log((dtw_t1+1)/(dtw_sf_pr+1)).mean()]
+std_error = [2*np.log((x+1)/(dtw_sf_pr+1)).std()/np.sqrt(len((x-dtw_sf_pr))) for x in [dtw_views,dtw_zero,dtw_t1]]
+mean_dtw = pd.DataFrame({
+    'mean': means,
+    'std': std_error
+})
+ 
+name=['ViEWS','Null','t-1']
+ 
 fig,ax = plt.subplots(figsize=(12,8))
-for i in range(4):
-    plt.scatter(mean_dtw["mean"][i],mean_de["mean"][i],color="gray",s=150)
-    plt.plot([mean_dtw["mean"][i],mean_dtw["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
-    plt.plot([mean_dtw["mean"][i]-mean_dtw["std"][i],mean_dtw["mean"][i]+mean_dtw["std"][i]],[mean_de["mean"][i],mean_de["mean"][i]],linewidth=3,color="gray")
-plt.scatter(0,0,color="black",s=150)
-plt.xlabel("Dynamic time warping ratio (reversed)")
-plt.ylabel("Difference explained ratio (DE)")
+for i in range(3):
+    plt.scatter(i,mean_dtw["mean"][i],color="gray",s=150)
+    #plt.plot([mean_dtw["mean"][i],mean_dtw["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
+    plt.plot([i,i],[mean_dtw["mean"][i]-mean_dtw["std"][i],mean_dtw["mean"][i]+mean_dtw["std"][i]],linewidth=3,color="gray")
+plt.ylabel("Dynamic time warping ratio")
+plt.xticks([0,1,2],name)
+plt.axhline(0, linestyle='--',color='lightgrey')
+plt.savefig("out/scatter_dtw.jpeg",dpi=400,bbox_inches="tight")
+plt.show()
 
-plt.xlim(0.1,-0.12)
-plt.ylim(-0.2,0.06)
+
+##### Change k #######
+mean_mse_k=[]
+mean_de_k=[]
+for k in [1,5,10]:
+    # Function to get difference explained
+    def diff_explained(df_input,pred,k=k,horizon=12):
+        d_nn=[]
+        for i in range(len(df_input.columns)):
+            real = df_input.iloc[:,i]
+            real=real.reset_index(drop=True)
+            sf = pred.iloc[:,i]
+            sf=sf.reset_index(drop=True)
+            max_s=0
+            if (real==0).all()==False:
+                for value in real[1:].index:
+                    if (real[value]==real[value-1]):
+                        1
+                    else:
+                        max_exp=0
+                        if (real[value]-real[value-1])/(sf[value]-sf[value-1])>0 and sf[value]-sf[value-1] != 0:
+                            t=abs(((real[value]-real[value-1])-(sf[value]-sf[value-1]))/(real[value]-real[value-1]))
+                            max_exp = np.exp(-(k*t))
+                        else:
+                            if value==horizon-1:
+                                if (real[value]-real[value-1])/(sf[value-1]-sf[value-2])>0 and sf[value-1]-sf[value-2] != 0:
+                                    t=abs(((real[value]-real[value-1])-(sf[value-1]-sf[value-2]))/(real[value]-real[value-1]))/2
+                                    if max_exp<np.exp(-(k*t)):
+                                        max_exp = np.exp(-(k*t))
+                            elif value==1:
+                                if (real[value]-real[value-1])/(sf[value+1]-sf[value])>0 and sf[value+1]-sf[value] != 0:
+                                    t=abs(((real[value]-real[value-1])-(sf[value+1]-sf[value]))/(real[value]-real[value-1]))/2
+                                    if max_exp<np.exp(-(k*t)):
+                                        max_exp = np.exp(-(k*t))
+                            else : 
+                                if (real[value]-real[value-1])/(sf[value-1]-sf[value-2])>0 and sf[value-1]-sf[value-2] != 0:
+                                    t=abs(((real[value]-real[value-1])-(sf[value-1]-sf[value-2]))/(real[value]-real[value-1]))/2
+                                    if max_exp<np.exp(-(k*t)):
+                                        max_exp = np.exp(-(k*t))
+                                if (real[value]-real[value-1])/(sf[value+1]-sf[value])>0 and sf[value+1]-sf[value] != 0:
+                                    t=abs(((real[value]-real[value-1])-(sf[value+1]-sf[value]))/(real[value]-real[value-1]))/2
+                                    if max_exp<np.exp(-(k*t)):
+                                        max_exp = np.exp(-(k*t))
+                        max_s=max_s+max_exp 
+                d_nn.append(max_s)
+            else:
+                d_nn.append(0) 
+        return(np.array(d_nn))
+    
+    # Calculate difference explaines
+    d_nn = diff_explained(df_input.iloc[-24:-24+horizon],df_sf_1)
+    d_nn2 = diff_explained(df_input.iloc[-12:],df_sf_2)
+    d_nn = np.concatenate([d_nn,d_nn2])
+    
+    d_b = diff_explained(df_input.iloc[-24:-24+horizon],df_preds_test_1.iloc[:12])
+    d_b2 = diff_explained(df_input.iloc[-12:],df_preds_test_2.iloc[:12])
+    d_b = np.concatenate([d_b,d_b2])
+    
+    d_null = diff_explained(df_input.iloc[-24:-24+horizon],pd.DataFrame(np.zeros((horizon,len(df_input.columns)))))
+    d_null2 = diff_explained(df_input.iloc[-12:],pd.DataFrame(np.zeros((horizon,len(df_input.columns)))))
+    d_null = np.concatenate([d_null,d_null2])
+    
+    d_t1 = diff_explained(df_input.iloc[-24:-24+horizon],df_input.iloc[-24-horizon:-24])
+    d_t12 = diff_explained(df_input.iloc[-12:],df_input.iloc[-24:-24+horizon])
+    d_t1= np.concatenate([d_t1,d_t12])
+    
+    err_mix = err_views.copy()
+    err_mix[ind_keep[df_keep_1]] = err_sf_pr.loc[ind_keep[df_keep_1]]
+    dtw_mix = dtw_views.copy()
+    dtw_mix[ind_keep[df_keep_1]] = dtw_sf_pr.loc[ind_keep[df_keep_1]]
+    d_mix = d_b.copy()
+    d_mix[ind_keep[df_keep_1]] = d_nn[ind_keep[df_keep_1]]
+    d_nn = d_nn[~np.isnan(d_nn)]
+    d_b = d_b[~np.isnan(d_b)]
+    d_null = d_null[~np.isnan(d_null)]
+    d_t1= d_t1[~np.isnan(d_t1)]
+    d_mix = d_mix[~np.isnan(d_mix)]
+    
+    # Difference explained
+    means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
+    std_error = [2*np.log((x+1)/(d_mix+1)).std()/np.sqrt(len((x-d_mix))) for x in [d_nn,d_b,d_null,d_t1]]
+    mean_de_k.append(means)
+    
+    # MSE
+    means = [np.log((err_sf_pr+1)/(err_mix+1)).mean(),np.log((err_views+1)/(err_mix+1)).mean(),np.log((err_zero+1)/(err_mix+1)).mean(),np.log((err_t1+1)/(err_mix+1)).mean()]
+    std_error = [2*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
+    mean_mse_k.append(means) 
+    
+mean_mse_k=pd.DataFrame(mean_mse_k)
+mean_de_k=pd.DataFrame(mean_de_k)
+ 
+fig,ax = plt.subplots(figsize=(12,8))
+ 
+plt.plot(mean_mse_k[0],mean_de_k[0],color="gray",markersize=10)
+for i,m in zip([0,1,2],["o","x","v"]):
+    plt.plot(mean_mse_k[0][i],mean_de_k[0][i],color="gray",marker=m,markersize=10)
+ 
+plt.plot(mean_mse_k[1],mean_de_k[1],color="gray",markersize=10)
+for i,m in zip([0,1,2],["o","x","v"]):
+    plt.plot(mean_mse_k[1][i],mean_de_k[1][i],color="gray",marker=m,markersize=10)
+
+plt.plot(mean_mse_k[2],mean_de_k[2],color="gray",markersize=10)
+for i,m in zip([0,1,2],["o","x","v"]):
+    plt.plot(mean_mse_k[2][i],mean_de_k[2][i],color="gray",marker=m,markersize=10)
+
+plt.plot(mean_mse_k[3],mean_de_k[3],color="gray",markersize=10)
+for i,m in zip([0,1,2],["o","x","v"]):
+    plt.plot(mean_mse_k[3][i],mean_de_k[3][i],color="gray",marker=m,markersize=10)
+       
+plt.scatter(0,0,color="black",s=150)
+plt.xlabel("Accuracy ratio (MSE reversed)")
+plt.ylabel("Difference explained ratio (DE)")
+ax.set_xticks([0, 0.1,0.2,0.3,0.4,0.5])   
+plt.xlim(0.5,-0.05)            
 plt.text(0.285, 0.004, "t-1", size=20, color='dimgray')
 plt.text(0.035,-0.158, "Null", size=20, color='dimgray')
 plt.text(0.026, -0.03, "ViEWS", size=20, color='dimgray')
 plt.text(0.138, -0.003, 'Shape finder', size=20,color="dimgray")
 plt.text(0.033, 0.008, 'Compound', size=20,color="black")
-ax.set_yticks([-0.2,-0.15,-0.1,-0.05,0,0.05])
-ax.set_xticks([0, 0.1,0.2,0.3,0.4,0.5])
-plt.savefig("out/scatter2a.jpeg",dpi=400,bbox_inches="tight")
-plt.show()
 
+marker1 = plt.Line2D([0], [0], marker='o', color='gray', markersize=10,label="k=1")
+marker2 = plt.Line2D([0], [0], marker='x', color='gray', markersize=10,label="k=5")
+marker3 = plt.Line2D([0], [0], marker='v', color='gray', markersize=10,label="k=10")
+plt.legend(handles=[marker1,marker2,marker3], loc='upper left')
+plt.savefig("out/scatter_k_test.jpeg",dpi=400,bbox_inches="tight")
+
+       
+  
 ### Find best performing cases ###
 
 for i in range(len(df_input.columns)): 
