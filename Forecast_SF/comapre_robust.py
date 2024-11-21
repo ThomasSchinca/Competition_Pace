@@ -17,6 +17,7 @@ from sklearn.metrics import mean_squared_error
 from scipy import stats
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from cycler import cycler
+from sklearn.metrics import mean_absolute_percentage_error
 
 plot_params = {"text.usetex":True,"font.family":"serif","font.size":20,"xtick.labelsize":20,"ytick.labelsize":20,"axes.labelsize":20,"figure.titlesize":20,"figure.figsize":(8,5),"axes.prop_cycle":cycler(color=['black','rosybrown','gray','indianred','red','maroon','silver',])}
 plt.rcParams.update(plot_params)
@@ -1286,18 +1287,157 @@ plt.xlim(-5,150)
 plt.ylim(-5,150)
 plt.show()
 
-from scipy.spatial.distance import euclidean
-from tslearn.metrics import dtw
-a = [1, 2, 3, 2, 1]
-b = [2, 3, 2, 0.5, 1]
-c = [1, 3, 1]
 
-dtw(a,b)
-dtw(a,c)
-
-euclidean(a,b)
+# =============================================================================
+# cluster check 
+# =============================================================================
 
 
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f)
+horizon=12
+df_input_sub=df_input.iloc[:-24]
+cluster_dist=[]
+check_inside=[]
+check_out=[]
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        # For each case, get region, year and magnitude as the log(total fatalities)
+
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository                       
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month            
+            date=df_tot_m.iloc[:-24].index.get_loc(last_date)
+            # If reference + horizon is in training data                        
+            if date+horizon<len(df_tot_m.iloc[:-24]):
+                # Extract sequence for reference, for the next 12 months                                
+                seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude                
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+                
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        pr_old = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        tot_seq['Cluster'] = clusters
+        
+        pred_seq.append((df_input.iloc[-24:-12,coun]-df_input_sub.iloc[-h_train:,coun].min())  /(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min()))
+        tot_seq_s=pd.DataFrame(pred_seq)
+        linkage_matrix = linkage(tot_seq_s, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        if clusters[-1] in pr[pr==pr.max()].index.tolist():
+            check_inside.append(pr_old.max())
+        else:
+            check_out.append(pr_old.max())     
+        
+    else:
+        pass
+        
+
+
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+    
+df_input_sub=df_input.iloc[:-12]
+horizon=12
+
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        
+        ### Extract information for cases in reference repository ###
+
+        # For each case, get region, year and magnitude as the log(total fatalities)
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository               
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        
+        # For each case in reference repository                       
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month
+            date=df_tot_m.iloc[:-12].index.get_loc(last_date)
+            # If reference + horizon is in training data            
+            if date+horizon<len(df_tot_m.iloc[:-12]):
+                # Extract sequence for reference, for the next 12 months                
+                seq=df_tot_m.iloc[:-12].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-12].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        pr_old = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        tot_seq['Cluster'] = clusters
+        
+        
+        pred_seq.append((df_input.iloc[-12:,coun]-df_input_sub.iloc[-h_train:,coun].min())  /(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min()))
+        tot_seq_s=pd.DataFrame(pred_seq)
+        linkage_matrix = linkage(tot_seq_s, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        if clusters[-1] in pr[pr==pr.max()].index.tolist():
+            check_inside.append(pr_old.max())
+        else:
+            check_out.append(pr_old.max())  
+    
+    else:
+        pass
+
+bins = [0.2, 0.4, 0.6, 0.8, 1]
+inside_hist, _ = np.histogram(check_inside, bins=bins)
+out_hist, _ = np.histogram(check_out, bins=bins)
+inside_percentage = inside_hist / (inside_hist + out_hist + 1e-9) * 100  # Prevent division by zero
+out_percentage = out_hist / (inside_hist + out_hist + 1e-9) * 100
+width = 0.1
+bin_centers = (np.array(bins[:-1]) + np.array(bins[1:])) / 2
+plt.bar(bin_centers, inside_percentage, width=width, color='blue', alpha=0.5, label='Outcome Inside')
+#plt.bar(bin_centers + width / 2, out_percentage, width=width, color='orange', alpha=0.5, label='Outcome Outside')
+plt.xlabel('Value Range')
+plt.ylabel('Percentage (%)')
+plt.title('Percentage Distribution Between Bins')
+plt.xticks(bins)
+#plt.legend()
+plt.show()
 
 
 
@@ -1305,5 +1445,554 @@ euclidean(a,b)
 
 
 
+    
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f)
+    
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+h_train=10
+df_input_sub=df_input.iloc[:-24]
+cluster_dist=[]
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        # For each case, get region, year and magnitude as the log(total fatalities)
+
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository                       
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month            
+            date=df_tot_m.iloc[:-24].index.get_loc(last_date)
+            # If reference + horizon is in training data                        
+            if date+horizon<len(df_tot_m.iloc[:-24]):
+                # Extract sequence for reference, for the next 12 months                                
+                seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude                
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+                
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        
+        # Calculate mean sequence for each cluster        
+        val_sce = tot_seq.groupby('Cluster').mean()
+        
+        # Proportions for each cluster        
+        pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
+        
+        # A. Get mean sequence with lowest intensity
+        pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+        # Adjust by range (*max-min) and add min value
+        pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+       
+        # B. Get mean sequence for cluster with highest number of observations                
+        pred_ori=val_sce.loc[pr==pr.max(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        # Adjust by range (*max-min) and add min value
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        # Append predictions
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+    
+    else:
+        # Add zeros
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))
+
+err_sf_pr=[]
+err_views=[]
+for i in range(len(df_input.columns)):   
+    err_sf_pr.append(mean_squared_error(df_input.iloc[-24:-24+horizon,i], pred_tot_pr[i]))
+err_sf_pr = np.array(err_sf_pr)
+
+mse_list_raw = err_sf_pr.copy()
+ 
+### Using 2022 to make predictions in 2023 ###
+
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+    
+df_input_sub=df_input.iloc[:-12]
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        
+        ### Extract information for cases in reference repository ###
+
+        # For each case, get region, year and magnitude as the log(total fatalities)
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository               
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        
+        # For each case in reference repository                       
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month
+            date=df_tot_m.iloc[:-12].index.get_loc(last_date)
+            # If reference + horizon is in training data            
+            if date+horizon<len(df_tot_m.iloc[:-12]):
+                # Extract sequence for reference, for the next 12 months                
+                seq=df_tot_m.iloc[:-12].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-12].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        
+        # Calculate mean sequence for each cluster
+        val_sce = tot_seq.groupby('Cluster').mean()
+        
+        # Proportions for each cluster
+        pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
+        
+        # A. Get mean sequence with lowest intensity
+        pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+        # Adjust by range (*max-min) and add min value
+        pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+        # B. Get mean sequence for cluster with highest number of observations                
+        pred_ori=val_sce.loc[pr==pr.max(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        # Adjust by range (*max-min) and add min value
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        # Append predictions
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+        
+    else:
+        # Add zeros         
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))  
+### Get MSE ###
+err_sf_pr=[]
+err_views=[]
+for i in range(len(df_input.columns)):   
+    err_sf_pr.append(mean_squared_error(df_input.iloc[-12:,i], pred_tot_pr[i]))
+err_sf_pr = np.array(err_sf_pr)
+
+mse_list_true = np.concatenate([mse_list_raw,err_sf_pr],axis=0)
 
 
+
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f)
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+h_train=10
+df_input_sub=df_input.iloc[:-24]
+cluster_dist=[]
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        # For each case, get region, year and magnitude as the log(total fatalities)
+
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository                       
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month            
+            date=df_tot_m.iloc[:-24].index.get_loc(last_date)
+            # If reference + horizon is in training data                        
+            if date+horizon<len(df_tot_m.iloc[:-24]):
+                # Extract sequence for reference, for the next 12 months                                
+                seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude                
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+                
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        
+        # Calculate mean sequence for each cluster        
+        val_sce = tot_seq.groupby('Cluster').mean()
+        
+        # Proportions for each cluster        
+        pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
+        
+        # A. Get mean sequence with lowest intensity
+        pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+        # Adjust by range (*max-min) and add min value
+        pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+       
+        # B. Get mean sequence for cluster with highest number of observations                
+        pred_ori=val_sce.loc[pr==pr.median(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        # Adjust by range (*max-min) and add min value
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        # Append predictions
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+    
+    else:
+        # Add zeros
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))
+
+err_sf_pr=[]
+err_views=[]
+for i in range(len(df_input.columns)):   
+    pred_tot_pr[i]=pred_tot_pr[i].fillna(0)
+    err_sf_pr.append(mean_squared_error(df_input.iloc[-24:-24+horizon,i], pred_tot_pr[i]))
+err_sf_pr = np.array(err_sf_pr)
+
+mse_list_raw = err_sf_pr.copy()
+ 
+### Using 2022 to make predictions in 2023 ###
+
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+    
+df_input_sub=df_input.iloc[:-12]
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        
+        ### Extract information for cases in reference repository ###
+
+        # For each case, get region, year and magnitude as the log(total fatalities)
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository               
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        
+        # For each case in reference repository                       
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month
+            date=df_tot_m.iloc[:-12].index.get_loc(last_date)
+            # If reference + horizon is in training data            
+            if date+horizon<len(df_tot_m.iloc[:-12]):
+                # Extract sequence for reference, for the next 12 months                
+                seq=df_tot_m.iloc[:-12].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-12].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        
+        # Calculate mean sequence for each cluster
+        val_sce = tot_seq.groupby('Cluster').mean()
+        
+        # Proportions for each cluster
+        pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
+        
+        # A. Get mean sequence with lowest intensity
+        pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+        # Adjust by range (*max-min) and add min value
+        pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+        # B. Get mean sequence for cluster with highest number of observations                
+        pred_ori=val_sce.loc[pr==pr.median(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        # Adjust by range (*max-min) and add min value
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        # Append predictions
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+    else:
+        # Add zeros         
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))  
+### Get MSE ###
+err_sf_pr=[]
+err_views=[]
+for i in range(len(df_input.columns)):   
+    pred_tot_pr[i]=pred_tot_pr[i].fillna(0)
+    err_sf_pr.append(mean_squared_error(df_input.iloc[-12:,i], pred_tot_pr[i]))
+err_sf_pr = np.array(err_sf_pr)
+
+mse_list_med = np.concatenate([mse_list_raw,err_sf_pr],axis=0)
+
+
+
+
+
+
+with open('test1.pkl', 'rb') as f:
+    dict_m = pickle.load(f)
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+h_train=10
+df_input_sub=df_input.iloc[:-24]
+cluster_dist=[]
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        # For each case, get region, year and magnitude as the log(total fatalities)
+
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository                       
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month            
+            date=df_tot_m.iloc[:-24].index.get_loc(last_date)
+            # If reference + horizon is in training data                        
+            if date+horizon<len(df_tot_m.iloc[:-24]):
+                # Extract sequence for reference, for the next 12 months                                
+                seq=df_tot_m.iloc[:-24].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude                
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+                
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        
+        # Calculate mean sequence for each cluster        
+        val_sce = tot_seq.groupby('Cluster').mean()
+        
+        # Proportions for each cluster        
+        pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
+        
+        # A. Get mean sequence with lowest intensity
+        pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+        # Adjust by range (*max-min) and add min value
+        pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+       
+        # B. Get mean sequence for cluster with highest number of observations                
+        pred_ori=val_sce.loc[pr==pr.min(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        # Adjust by range (*max-min) and add min value
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        # Append predictions
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+    
+    else:
+        # Add zeros
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))
+
+err_sf_pr=[]
+err_views=[]
+for i in range(len(df_input.columns)):   
+    pred_tot_pr[i]=pred_tot_pr[i].fillna(0)
+    err_sf_pr.append(mean_squared_error(df_input.iloc[-24:-24+horizon,i], pred_tot_pr[i]))
+err_sf_pr = np.array(err_sf_pr)
+
+mse_list_raw = err_sf_pr.copy()
+ 
+### Using 2022 to make predictions in 2023 ###
+
+with open('test2.pkl', 'rb') as f:
+    dict_m = pickle.load(f) 
+    
+df_input_sub=df_input.iloc[:-12]
+pred_tot_min=[]
+pred_tot_pr=[]
+horizon=12
+
+for coun in range(len(df_input_sub.columns)):
+    # If the last h_train observations of training data are not flat
+    if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+        
+        ### Extract information for cases in reference repository ###
+
+        # For each case, get region, year and magnitude as the log(total fatalities)
+        inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+        # Get reference reporitory for case                
+        l_find=dict_m[df_input.columns[coun]]
+        # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+        
+        # For each case in reference repository               
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        
+        # For each case in reference repository                       
+        for col,last_date,mi,ma,somme in tot_seq:
+            # Get views id for last month
+            date=df_tot_m.iloc[:-12].index.get_loc(last_date)
+            # If reference + horizon is in training data            
+            if date+horizon<len(df_tot_m.iloc[:-12]):
+                # Extract sequence for reference, for the next 12 months                
+                seq=df_tot_m.iloc[:-12].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-12].columns.get_loc(col)].reset_index(drop=True)
+                # Scaling                
+                seq = (seq - mi) / (ma - mi)
+                # Add to list                
+                pred_seq.append(seq.tolist())
+                # Add region, decade and magnitude
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+
+        # Sequences for all case in the reference repository, if they belong to training data,
+        # every row is one sequence                 
+        tot_seq=pd.DataFrame(pred_seq)
+        
+        ### Apply hierachical clustering to sequences in reference repository ###        
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        
+        # Calculate mean sequence for each cluster
+        val_sce = tot_seq.groupby('Cluster').mean()
+        
+        # Proportions for each cluster
+        pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
+        
+        # A. Get mean sequence with lowest intensity
+        pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+        # Adjust by range (*max-min) and add min value
+        pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+        # B. Get mean sequence for cluster with highest number of observations                
+        pred_ori=val_sce.loc[pr==pr.min(),:]
+        pred_ori=pred_ori.mean(axis=0)
+        # Adjust by range (*max-min) and add min value
+        preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+        # Append predictions
+        pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+    else:
+        # Add zeros         
+        pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+        pred_tot_pr.append(pd.Series(np.zeros((horizon,))))  
+### Get MSE ###
+err_sf_pr=[]
+err_views=[]
+for i in range(len(df_input.columns)):   
+    pred_tot_pr[i]=pred_tot_pr[i].fillna(0)
+    err_sf_pr.append(mean_absolute_percentage_error(df_input.iloc[-12:,i], pred_tot_pr[i]))
+err_sf_pr = np.array(err_sf_pr)
+
+mse_list_min = np.concatenate([mse_list_raw,err_sf_pr],axis=0)
+
+mse_list_true = np.log(mse_list_true+1)
+mse_list_med = np.log(mse_list_med+1)
+mse_list_min = np.log(mse_list_min+1)
+
+means = [mse_list_true.mean(),mse_list_med.mean(),mse_list_min.mean()]
+std_error = [1.96*mse_list_true.std()/np.sqrt(len(mse_list_true)),1.96*mse_list_med.std()/np.sqrt(len(mse_list_med)),1.96*mse_list_min.std()/np.sqrt(len(mse_list_min))]
+mean_de = pd.DataFrame({
+    'mean': means,
+    'std': std_error
+})
+
+fig,ax = plt.subplots(figsize=(12,8))
+for i in range(3):
+    plt.scatter(i,mean_de["mean"][i],color="gray",s=150)
+    #plt.plot([mean_dtw["mean"][i],mean_dtw["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
+    plt.plot([i,i],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
+plt.xticks([0,1,2],['Max Probability','Median Probability','Minimum Probability'],fontsize=20)
+plt.ylabel('Log MAPE',fontsize=20)
+plt.xlim(-0.5,2.5)
+plt.show()
