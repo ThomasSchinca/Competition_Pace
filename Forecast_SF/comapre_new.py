@@ -349,7 +349,8 @@ for coun in range(len(df_input_sub.columns)):
         
         # Proportions for each cluster        
         pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
-        cluster_dist.append(pr.max())
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
         
         # A. Get mean sequence with lowest intensity
         pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
@@ -574,7 +575,8 @@ for coun in range(len(df_input_sub.columns)):
         
         # Proportions for each cluster
         pr = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
-        cluster_dist.append(pr.max())
+        #cluster_dist.append(pr.max())
+        cluster_dist.append(pd.Series(clusters).value_counts().max())
         
         # A. Get mean sequence with lowest intensity
         pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
@@ -628,7 +630,9 @@ for coun in range(len(df_input_sub.columns)):
         plt.savefig(f"out/compare_preds_{df_input_sub.columns[coun]}_2023.jpeg",dpi=400,bbox_inches="tight")
         plt.show()  
 
+# Average proportion of cases assigned to the majortiy cluster
 print(np.mean(cluster_dist))
+print(np.std(cluster_dist))
 
 # Save
 df_sf_2= pd.concat(pred_tot_pr,axis=1)
@@ -989,7 +993,7 @@ d_mix = d_mix[~np.isnan(d_mix)]
 
 # Difference explained
 means = [d_nn.mean(),d_b.mean(),d_null.mean(),d_t1.mean(),d_mix.mean()]
-std_error = [2*d_nn.std()/np.sqrt(len(d_nn)),2*d_b.std()/np.sqrt(len(d_b)),2*d_null.std()/np.sqrt(len(d_null)),2*d_t1.std()/np.sqrt(len(d_t1)),2*d_mix.std()/np.sqrt(len(d_mix))]
+std_error = [1.993*d_nn.std()/np.sqrt(len(d_nn)),1.993*d_b.std()/np.sqrt(len(d_b)),1.993*d_null.std()/np.sqrt(len(d_null)),1.993*d_t1.std()/np.sqrt(len(d_t1)),1.993*d_mix.std()/np.sqrt(len(d_mix))]
 mean_de = pd.DataFrame({
     'mean': means,
     'std': std_error
@@ -997,7 +1001,7 @@ mean_de = pd.DataFrame({
 
 # MSE
 means = [err_sf_pr.mean(),err_views.mean(),err_zero.mean(),err_t1.mean(),err_mix.mean()]
-std_error = [2*err_sf_pr.std()/np.sqrt(len(err_sf_pr)),2*err_views.std()/np.sqrt(len(err_views)),2*err_zero.std()/np.sqrt(len(err_zero)),2*err_t1.std()/np.sqrt(len(err_t1)),2*err_mix.std()/np.sqrt(len(err_mix))]
+std_error = [1.993*err_sf_pr.std()/np.sqrt(len(err_sf_pr)),1.993*err_views.std()/np.sqrt(len(err_views)),1.993*err_zero.std()/np.sqrt(len(err_zero)),1.993*err_t1.std()/np.sqrt(len(err_t1)),1.993*err_mix.std()/np.sqrt(len(err_mix))]
 mean_mse = pd.DataFrame({
     'mean': means,
     'std': std_error
@@ -1039,7 +1043,7 @@ plt.savefig("out/scatter1.jpeg",dpi=400,bbox_inches="tight")
 
 # Difference explained
 means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
-std_error = [2*np.log((x+1)/(d_mix+1)).std()/np.sqrt(len((x-d_mix))) for x in [d_nn,d_b,d_null,d_t1]]
+std_error = [1.993*np.log((x+1)/(d_mix+1)).std()/np.sqrt(len((x-d_mix))) for x in [d_nn,d_b,d_null,d_t1]]
 mean_de = pd.DataFrame({
     'mean': means,
     'std': std_error
@@ -1047,7 +1051,7 @@ mean_de = pd.DataFrame({
 
 # MSE
 means = [np.log((err_sf_pr+1)/(err_mix+1)).mean(),np.log((err_views+1)/(err_mix+1)).mean(),np.log((err_zero+1)/(err_mix+1)).mean(),np.log((err_t1+1)/(err_mix+1)).mean()]
-std_error = [2*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
+std_error = [1.993*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
 mean_mse = pd.DataFrame({
     'mean': means,
     'std': std_error
@@ -1080,7 +1084,7 @@ plt.show()
  
  
 means = [np.log((dtw_views+1)/(dtw_sf_pr+1)).mean(),np.log((dtw_zero+1)/(dtw_sf_pr+1)).mean(),np.log((dtw_t1+1)/(dtw_sf_pr+1)).mean()]
-std_error = [2*np.log((x+1)/(dtw_sf_pr+1)).std()/np.sqrt(len((x-dtw_sf_pr))) for x in [dtw_views,dtw_zero,dtw_t1]]
+std_error = [1.993*np.log((x+1)/(dtw_sf_pr+1)).std()/np.sqrt(len((x-dtw_sf_pr))) for x in [dtw_views,dtw_zero,dtw_t1]]
 mean_dtw = pd.DataFrame({
     'mean': means,
     'std': std_error
@@ -1179,12 +1183,12 @@ for k in [1,5,10]:
     
     # Difference explained
     means = [np.log((d_nn+1)/(d_mix+1)).mean(),np.log((d_b+1)/(d_mix+1)).mean(),np.log((d_null+1)/(d_mix+1)).mean(),np.log((d_t1+1)/(d_mix+1)).mean()]
-    std_error = [2*np.log((x+1)/(d_mix+1)).std()/np.sqrt(len((x-d_mix))) for x in [d_nn,d_b,d_null,d_t1]]
+    std_error = [1.993*np.log((x+1)/(d_mix+1)).std()/np.sqrt(len((x-d_mix))) for x in [d_nn,d_b,d_null,d_t1]]
     mean_de_k.append(means)
     
     # MSE
     means = [np.log((err_sf_pr+1)/(err_mix+1)).mean(),np.log((err_views+1)/(err_mix+1)).mean(),np.log((err_zero+1)/(err_mix+1)).mean(),np.log((err_t1+1)/(err_mix+1)).mean()]
-    std_error = [2*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
+    std_error = [1.993*np.log((x+1)/(err_mix+1)).std()/np.sqrt(len((x-err_mix))) for x in [err_sf_pr,err_views,err_zero,err_t1]]
     mean_mse_k.append(means) 
     
 mean_mse_k=pd.DataFrame(mean_mse_k)
