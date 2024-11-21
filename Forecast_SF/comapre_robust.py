@@ -1249,7 +1249,7 @@ for coun in range(len(df_input.columns)):
             
 means_z = [arr.mean() for arr in [np.array(l_mse_zero_not),np.array(l_mse_zero),np.array(l_mse_zero_not+l_mse_zero)]]
 cis_z = [stats.sem(arr, axis=0) * stats.t.ppf((1 + 0.95) / 2., len(arr)-1) for arr in [np.array(l_mse_zero_not),np.array(l_mse_zero),np.array(l_mse_zero_not+l_mse_zero)]]
-x_ticks = ['Non-flat furture (14\%)', 'Flat furture (86\%)','All']
+x_ticks = ['Non-flat future (14\%)', 'Flat future (86\%)','All']
 plt.figure(figsize=(10, 5))
 plt.errorbar(x=x_ticks, y=means_z, yerr=np.squeeze(cis_z), fmt='o', markersize=8, color='black', ecolor='black')
 plt.ylabel("Mean squared error (log-ratio)")
