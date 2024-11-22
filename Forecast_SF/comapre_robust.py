@@ -1429,14 +1429,16 @@ out_hist, _ = np.histogram(check_out, bins=bins)
 inside_percentage = inside_hist / (inside_hist + out_hist + 1e-9) * 100  # Prevent division by zero
 out_percentage = out_hist / (inside_hist + out_hist + 1e-9) * 100
 width = 0.1
+fig,ax = plt.subplots(figsize=(12,8))
 bin_centers = (np.array(bins[:-1]) + np.array(bins[1:])) / 2
-plt.bar(bin_centers, inside_percentage, width=width, color='blue', alpha=0.5, label='Outcome Inside')
+plt.bar(bin_centers, inside_percentage, width=width, color='gray', alpha=0.5, label='Outcome Inside')
 #plt.bar(bin_centers + width / 2, out_percentage, width=width, color='orange', alpha=0.5, label='Outcome Outside')
-plt.xlabel('Value Range')
-plt.ylabel('Percentage (%)')
-plt.title('Percentage Distribution Between Bins')
+plt.xlabel('Size of majority cluster')
+plt.ylabel('Futures (\%) assigned to majority cluster')
+#plt.title('Percentage Distribution Between Bins')
 plt.xticks(bins)
 #plt.legend()
+plt.savefig("out/hist.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
@@ -1989,10 +1991,19 @@ mean_de = pd.DataFrame({
 
 fig,ax = plt.subplots(figsize=(12,8))
 for i in range(3):
-    plt.scatter(i,mean_de["mean"][i],color="gray",s=150)
+    plt.scatter(i,mean_de["mean"][i],color="black",s=150)
     #plt.plot([mean_dtw["mean"][i],mean_dtw["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
-    plt.plot([i,i],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
-plt.xticks([0,1,2],['Max Probability','Median Probability','Minimum Probability'],fontsize=20)
-plt.ylabel('Log MAPE',fontsize=20)
+    plt.plot([i,i],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="black")
+plt.xticks([0,1,2],['Maximum cluster size','Median cluster size','Minimum cluster size'],fontsize=20)
+plt.ylabel('Mean absolute percentage error (log-ratio)',fontsize=20)
 plt.xlim(-0.5,2.5)
+plt.savefig("out/mape.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
+
+
+
+
+
+
+
+
