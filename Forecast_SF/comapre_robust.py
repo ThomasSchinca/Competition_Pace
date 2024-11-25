@@ -2001,9 +2001,166 @@ plt.savefig("out/mape.jpeg",dpi=400,bbox_inches="tight")
 plt.show()
 
 
+####################
+### Validation set #
+####################
+
+from shape import Shape,finder
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+from sklearn.metrics import mean_squared_error
+
+df_input=pd.read_csv('df_input.csv',index_col=0,parse_dates=True)
+df_tot_m = df_input.copy()
+df_tot_m.replace(0, np.nan, inplace=True)
+df_tot_m = df_tot_m.dropna(axis=1, how='all')
+df_tot_m = df_tot_m.fillna(0)
+country_list = pd.read_csv('country_list.csv',index_col=0)
+df_conf=pd.read_csv('reg_coun.csv',index_col=0)
+df_conf=pd.Series(df_conf.region)
+replace_c = {'Cambodia (Kampuchea)': 'Cambodia','DR Congo (Zaire)':'Congo, DRC',
+             'Ivory Coast':'Cote d\'Ivoire', 'Kingdom of eSwatini (Swaziland)':'Swaziland',
+             'Myanmar (Burma)':'Myanmar','Russia (Soviet Union)':'Russia',
+             'Serbia (Yugoslavia)':'Serbia','Madagascar (Malagasy)':'Madagascar',
+             'Macedonia, FYR':'Macedonia','Vietnam (North Vietnam)':'Vietnam',
+             'Yemen (North Yemen)':'Yemen','Zimbabwe (Rhodesia)':'Zimbabwe',
+             'United States of America':'United States','Solomon Islands':'Solomon Is.',
+             'Bosnia-Herzegovina':'Bosnia and Herzegovina'}
+df_conf.rename(index=replace_c, inplace=True)
+df_conf['Sao Tome and Principe']='Africa'
 
 
+for min_d_s in [0.1,0.5,1]:
+    h_train=10
+    dict_m={i :[] for i in df_input.columns} 
+    df_input_sub=df_input.iloc[:-36]
+    for coun in range(len(df_input_sub.columns)):
+        # If the last h_train observations of training data are not flat, run Shape finder, else pass    
+        if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+            shape = Shape()
+            # Set last h_train observations of training data as shape
+            shape.set_shape(df_input_sub.iloc[-h_train:,coun]) 
+            # Find matches in training data        
+            find = finder(df_tot_m.iloc[:-36],shape)
+            find.find_patterns_fast(min_d=min_d_s,select=True,metric='dtw',dtw_sel=2,min_mat=5,d_increase= 0.05)           
+            dict_m[df_input.columns[coun]]=find.sequences
+        else :
+            pass
 
 
+err_sf_pr_tot=[]   
+de_list=[]  
+for file in ['test_0.1.pkl','test_0.5.pkl','test_1dist.pkl']: 
+    with open(file, 'rb') as f:
+        dict_m = pickle.load(f) 
+    for thres_hold in [12,6,4]:
+        pred_tot_min=[]
+        pred_tot_pr=[]
+        horizon=12
+        h_train=10
+        df_input_sub=df_input.iloc[:-36]
+        cluster_dist=[]
+        for coun in range(len(df_input_sub.columns)):
+            # If the last h_train observations of training data are not flat
+            if not (df_input_sub.iloc[-h_train:,coun]==0).all():
+                # For each case, get region, year and magnitude as the log(total fatalities)
+        
+                inp=[df_conf[df_input_sub.iloc[-h_train:,coun].name],df_input_sub.iloc[-h_train:,coun].index.year[int(horizon/2)],np.log10(df_input_sub.iloc[-h_train:,coun].sum())]
+                # Get reference reporitory for case                
+                l_find=dict_m[df_input.columns[coun]]
+                # For each case in repository, get country name, last time point, minimum, maximum and sum of fatalities                
+                tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in l_find]
+                
+                # For each case in reference repository                       
+                pred_seq=[]
+                co=[]
+                deca=[]
+                scale=[]
+                for col,last_date,mi,ma,somme in tot_seq:
+                    # Get views id for last month            
+                    date=df_tot_m.iloc[:-36].index.get_loc(last_date)
+                    # If reference + horizon is in training data                        
+                    if date+horizon<len(df_tot_m.iloc[:-36]):
+                        # Extract sequence for reference, for the next 12 months                                
+                        seq=df_tot_m.iloc[:-36].iloc[date+1:date+1+horizon,df_tot_m.iloc[:-24].columns.get_loc(col)].reset_index(drop=True)
+                        # Scaling                
+                        seq = (seq - mi) / (ma - mi)
+                        # Add to list                                
+                        pred_seq.append(seq.tolist())
+                        # Add region, decade and magnitude                
+                        co.append(df_conf[col])
+                        deca.append(last_date.year)
+                        scale.append(somme)
+                        
+                # Sequences for all case in the reference repository, if they belong to training data,
+                # every row is one sequence                 
+                tot_seq=pd.DataFrame(pred_seq)
+                
+                ### Apply hierachical clustering to sequences in reference repository ###        
+                linkage_matrix = linkage(tot_seq, method='ward')
+                clusters = fcluster(linkage_matrix, thres_hold, criterion='distance')
+                tot_seq['Cluster'] = clusters
+                
+                # Calculate mean sequence for each cluster        
+                val_sce = tot_seq.groupby('Cluster').mean()
+                
+                # Proportions for each cluster        
+                pr = pd.Series(clusters).value_counts(normalize=True).sort_index()
+                #cluster_dist.append(pr.max())
+                cluster_dist.append(pd.Series(clusters).value_counts().max())
+                
+                # A. Get mean sequence with lowest intensity
+                pred_ori=val_sce.loc[val_sce.sum(axis=1).idxmin(),:]
+                # Adjust by range (*max-min) and add min value
+                pred_tot_min.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+               
+                # B. Get mean sequence for cluster with highest number of observations                
+                pred_ori=val_sce.loc[pr==pr.min(),:]
+                pred_ori=pred_ori.mean(axis=0)
+                # Adjust by range (*max-min) and add min value
+                preds=pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min()
+                # Append predictions
+                pred_tot_pr.append(pred_ori*(df_input_sub.iloc[-h_train:,coun].max()-df_input_sub.iloc[-h_train:,coun].min())+df_input_sub.iloc[-h_train:,coun].min())
+        
+            else:
+                pred_tot_min.append(pd.Series(np.zeros((horizon,))))
+                pred_tot_pr.append(pd.Series(np.zeros((horizon,))))
+        
+        err_sf_pr=[]
+        for i in range(len(df_input.columns)):   
+            pred_tot_pr[i]=pred_tot_pr[i].fillna(0)
+            err_sf_pr.append(mean_squared_error(df_input.iloc[-24:-24+horizon,i], pred_tot_pr[i]))
+        err_sf_pr = np.array(err_sf_pr)
+        err_sf_pr_tot.append(err_sf_pr)
+        
+        df_sf = pd.concat(pred_tot_pr,axis=1)
+        df_sf.columns=country_list['name']
+        
+        d_nn = diff_explained(df_input.iloc[-36:-24],df_sf)
+        de_list.append(d_nn)
 
+means = [x.mean() for x in de_list]
+std_error = [1.993*x.std()/np.sqrt(len((x))) for x in de_list]
+mean_de = pd.DataFrame({
+    'mean': means,
+    'std': std_error
+})
 
+# MSE
+means = [x.mean() for x in err_sf_pr_tot]
+std_error = [1.993*x.std()/np.sqrt(len((x))) for x in err_sf_pr_tot]
+mean_mse = pd.DataFrame({
+    'mean': means,
+    'std': std_error
+})
+
+name = ['min_d=' + str(i) + ',thres=' + str(j) for i in ['0.1', '0.5', '1'] for j in ['12','6', '4']]
+fig,ax = plt.subplots(figsize=(12,8))
+for i in range(9):
+    plt.scatter(mean_mse["mean"][i],mean_de["mean"][i],label=name[i],s=150)
+    #plt.plot([mean_mse["mean"][i],mean_mse["mean"][i]],[mean_de["mean"][i]-mean_de["std"][i],mean_de["mean"][i]+mean_de["std"][i]],linewidth=3,color="gray")
+    #plt.plot([mean_mse["mean"][i]-mean_mse["std"][i],mean_mse["mean"][i]+mean_mse["std"][i]],[mean_de["mean"][i],mean_de["mean"][i]],linewidth=3,color="gray")
+plt.xlabel("Error (MSE)")
+plt.ylabel("Difference explained ratio (DE)")
+plt.xlim(150000000,0)
+plt.legend()
+plt.show()
